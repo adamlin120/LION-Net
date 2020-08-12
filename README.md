@@ -16,15 +16,30 @@ year = "2020"
 
 Required python packages are listed in *requirements.txt*.
 
+```bash
+pip install -r requirements.txt
+python -m spacy download en_core_web_sm
+```
+
 ## Dataset
 
 The dataset we used is Schema-Guided Dialogue State Tracking Dataset provided by Google.
 > https://github.com/google-research-datasets/dstc8-schema-guided-dialogue
 
+```bash
+wget https://ytlin.s3-ap-northeast-1.amazonaws.com/data/dstc8-schema-guided-dialogue-master.zip
+unzip dstc8-schema-guided-dialogue-master.zip
+```
+
 ## Preprocess
 
 Download the dataset first and remember to download the GloVe word vectors.
 > https://nlp.stanford.edu/projects/glove/
+
+```bash
+wget http://nlp.stanford.edu/data/wordvecs/glove.840B.300d.zip
+unzip glove.840B.300d.zip
+```
 
 After downloading you need to put them into the directory you want.
 #### Create dataset

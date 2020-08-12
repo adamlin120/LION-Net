@@ -1,8 +1,8 @@
 data:
-    data_dir: "/tmp/dstc8-track4/"
-    save_dir: "/tmp/dstc8-track4/save/"
-    transfo_dir: "/tmp/dstc8-track4/transfo/bert-base-cased-finetuned/"
-    embed_path: "/tmp/dstc8-track4/save/glove.840B.300d.txt"
+    data_dir: "../dstc8-schema-guided-dialogue-master/"
+    save_dir: "../save/"
+    transfo_dir: "../bert-base-cased/"
+    embed_path: "../glove.840B.300d.txt"
     cased: True
     schema:
         layer: 11
