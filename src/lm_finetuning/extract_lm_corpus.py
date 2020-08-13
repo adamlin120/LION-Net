@@ -1,10 +1,10 @@
 import argparse
-import ipdb
 import json
 import sys
-
-from box import Box
 from pathlib import Path
+
+import ipdb
+from box import Box
 from tqdm import tqdm
 
 

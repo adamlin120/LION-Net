@@ -1,7 +1,3 @@
-import torch
-import torch.nn as nn
-
-
 def extract_values(preds, gates, dc_gate, multi_value, vocab, ext_list):
     BOS = vocab.convert_tokens_to_indices(["<BOS>"])[0]
     EOS = vocab.convert_tokens_to_indices(["<EOS>"])[0]

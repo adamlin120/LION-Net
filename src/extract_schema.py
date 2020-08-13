@@ -1,17 +1,16 @@
 import argparse
-import ipdb
 import json
 import pickle
-import torch
-import spacy
 import sys
-
-from box import Box
 from pathlib import Path
-from tqdm import tqdm
 
-from transformers import BertTokenizer
+import ipdb
+import spacy
+import torch
+from box import Box
+from tqdm import tqdm
 from transformers import BertConfig, BertModel
+from transformers import BertTokenizer
 
 from modules.logger import create_logger
 from modules.utils import create_device

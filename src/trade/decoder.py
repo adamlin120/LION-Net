@@ -1,5 +1,4 @@
 import numpy as np
-import sys
 import torch
 import torch.nn as nn
 
@@ -24,17 +23,17 @@ class Decoder(nn.Module):
 
         self.emb = emb
         self.rnn = getattr(torch.nn, self.type)(
-                input_size=config.emb.dim,
-                hidden_size=config.dec.dim,
-                num_layers=config.dec.lyr,
-                dropout=(config.dec.drp if config.dec.lyr > 1 else 0),
-                batch_first=True)
+            input_size=config.emb.dim,
+            hidden_size=config.dec.dim,
+            num_layers=config.dec.lyr,
+            dropout=(config.dec.drp if config.dec.lyr > 1 else 0),
+            batch_first=True)
         self.h_proj = nn.Linear(
-                config.enc.dim * (1 + config.enc.bid) * config.enc.lyr,
-                config.dec.dim * config.dec.lyr)
+            config.enc.dim * (1 + config.enc.bid) * config.enc.lyr,
+            config.dec.dim * config.dec.lyr)
         self.hs_proj = nn.Linear(
-                config.sch.dim,
-                config.dec.dim * config.dec.lyr)
+            config.sch.dim,
+            config.dec.dim * config.dec.lyr)
         if self.type == "GRU":
             self.attn = Attn(
                 method=getattr(config.dec, "attn", "none"),
@@ -48,8 +47,8 @@ class Decoder(nn.Module):
                 config.enc.dim * (1 + config.enc.bid) * config.enc.lyr,
                 config.dec.dim * config.dec.lyr)
             self.cs_proj = nn.Linear(
-                    config.sch.dim,
-                    config.dec.dim * config.dec.lyr)
+                config.sch.dim,
+                config.dec.dim * config.dec.lyr)
             self.attn = Attn(
                 method=getattr(config.dec, "attn", "none"),
                 k_dim=config.enc.dim * (1 + config.enc.bid),
@@ -90,7 +89,7 @@ class Decoder(nn.Module):
                     dtype=torch.long, device=enc_o.device)
             else:
                 if unk_v is not None:
-                    x = unk_v[:, idx-1].unsqueeze(1)
+                    x = unk_v[:, idx - 1].unsqueeze(1)
                 else:
                     x = last_x.masked_fill(
                         (last_x >= self.vocab_size), self.unk)

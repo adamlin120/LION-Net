@@ -1,26 +1,16 @@
-import copy
-import csv
 import json
-import numpy as np
-import os
 import pickle
-import re
+from pathlib import Path
+
+import numpy as np
 import spacy
 import torch
-import torch.nn as nn
-
 from numpy import linalg as LA
-from pathlib import Path
-from time import gmtime, strftime
 from tqdm import tqdm
 
 from modules.dataset import create_data_loader, transfer
 from modules.logger import create_logger
-from modules.metrics import compute_active_intent_acc
-from modules.metrics import compute_requested_slots_f1
-from modules.metrics import compute_slot_filling_acc
 from modules.utils import create_device, extract_cat_slots, get_num_lines
-
 from trade.model import Model
 from trade.utils import extract_values
 
@@ -82,8 +72,8 @@ class Tester:
         test_files = list((self.origin_dir / "test").glob("dialogues_*.json"))
         test_files.sort()
         out_files = [
-                self.pred_dir / f"dialogues_{idx+1:0>3}.json"
-                for idx in range(len(test_files))]
+            self.pred_dir / f"dialogues_{idx + 1:0>3}.json"
+            for idx in range(len(test_files))]
 
         self.model.eval()
         preds = self.run_epoch(0, "test")
@@ -175,7 +165,7 @@ class Tester:
             for j, val in enumerate(o):
                 if val >= 0.5:
                     pred.append(self.idx2slot[
-                        batch['requested_slots']['slot_idx'][i][j]][1])
+                                    batch['requested_slots']['slot_idx'][i][j]][1])
             req_preds.append(pred)
         # slot tagging
         cxt_preds = [torch.argmax(o, dim=1).tolist() for o in cxt_o]
@@ -224,8 +214,8 @@ class Tester:
                                             if word in self.emb],
                                         axis=0))
                             final_preds[sidx].append(values[
-                                self.get_most_likely(
-                                    embs, val_emb, self.similarity)])
+                                                         self.get_most_likely(
+                                                             embs, val_emb, self.similarity)])
                         except IndexError:
                             pass
                     elif self.fix_syntax:

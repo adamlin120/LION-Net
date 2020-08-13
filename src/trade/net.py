@@ -3,10 +3,10 @@ import torch.nn as nn
 
 from modules.embedding import Embedding
 from trade.classifier import Classifier
-from trade.encoder import Encoder
 from trade.decoder import Decoder
-from trade.loader import Loader
+from trade.encoder import Encoder
 from trade.gate import Gate
+from trade.loader import Loader
 
 
 class Net(nn.Module):
@@ -108,4 +108,3 @@ class Net(nn.Module):
             cxt_o.append(gat_o)
 
         return act_o, req_o, dec_o, cxt_o
-

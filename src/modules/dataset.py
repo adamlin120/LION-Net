@@ -1,10 +1,7 @@
-import numpy as np
 import pickle
-import torch
-
-from functools import reduce
-from operator import add
 from pathlib import Path
+
+import torch
 from torch.utils.data import DataLoader, Dataset
 
 
@@ -45,7 +42,6 @@ def padding(seqs, max_seq_len=-1):
 
 
 def gen_collate_fn(config, vocab, mode="train"):
-
     EOS = vocab.convert_tokens_to_indices(["<EOS>"])[0]
     UNK = vocab.convert_tokens_to_indices(["<UNK>"])[0]
     PAD = vocab.convert_tokens_to_indices(["<PAD>"])[0]
@@ -488,4 +484,3 @@ def transfer(batch, device):
             for service_desc in
             batch['slot_filling']['value_service_desc']]
     return batch
-

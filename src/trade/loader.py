@@ -1,10 +1,7 @@
 import pickle
+
 import torch
 import torch.nn as nn
-
-from pathlib import Path
-
-from modules.dataset import padding
 
 
 class Loader(nn.Module):
@@ -37,13 +34,13 @@ class Loader(nn.Module):
                     bidirectional=config.sch.bid,
                     batch_first=True)
                 input_dim = (
-                    config.sch.dim * (1 + config.sch.bid) *
-                    config.sch.lyr * 2)
+                        config.sch.dim * (1 + config.sch.bid) *
+                        config.sch.lyr * 2)
                 self.slt_proj = nn.Linear(input_dim, config.sch.dim)
                 self.int_proj = nn.Linear(input_dim, config.sch.dim)
             else:
                 input_dim = (
-                    config.sch.dim * (1 + config.sch.bid) * config.sch.lyr)
+                        config.sch.dim * (1 + config.sch.bid) * config.sch.lyr)
                 self.slt_proj = nn.Linear(input_dim, config.sch.dim)
                 self.int_proj = nn.Linear(input_dim, config.sch.dim)
             self.emb = emb

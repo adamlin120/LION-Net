@@ -1,15 +1,16 @@
-from argparse import ArgumentParser
-from pathlib import Path
-from tqdm import tqdm, trange
-from tempfile import TemporaryDirectory
-import shelve
-from multiprocessing import Pool
-
-from random import random, randrange, randint, shuffle, choice
-from pytorch_transformers.tokenization_bert import BertTokenizer
-import numpy as np
-import json
 import collections
+import json
+import shelve
+from argparse import ArgumentParser
+from multiprocessing import Pool
+from pathlib import Path
+from random import random, randrange, randint, shuffle, choice
+from tempfile import TemporaryDirectory
+
+import numpy as np
+from pytorch_transformers.tokenization_bert import BertTokenizer
+from tqdm import tqdm, trange
+
 
 class DocumentDatabase:
     def __init__(self, reduce_memory=False):
@@ -99,8 +100,10 @@ def truncate_seq_pair(tokens_a, tokens_b, max_num_tokens):
         else:
             trunc_tokens.pop()
 
+
 MaskedLmInstance = collections.namedtuple("MaskedLmInstance",
                                           ["index", "label"])
+
 
 def create_masked_lm_predictions(tokens, masked_lm_prob, max_predictions_per_seq, whole_word_mask, vocab_list):
     """Creates the predictions for the masked LM objective. This is mostly copied from the Google BERT repo, but

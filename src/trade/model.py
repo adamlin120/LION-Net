@@ -1,12 +1,10 @@
 import subprocess
+from datetime import datetime
+
 import torch
 import torch.nn as nn
 
-from datetime import datetime
-from pathlib import Path
-
 from modules.logger import create_logger
-
 from trade.net import Net
 
 

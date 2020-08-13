@@ -12,16 +12,16 @@ CORPUS_FILE=$SAVE_DIR/corpus.txt
 python3 lm_finetuning/extract_lm_corpus.py -c $CONFIG_FILE
 
 python3 lm_finetuning/pregenerate_training_data.py \
---train_corpus $CORPUS_FILE \
---bert_model $MODEL_DIR \
---output_dir $SAVE_DIR/lm_finetuning \
---epochs_to_generate $EPOCHS \
---max_seq_len $MAX_SEQ_LEN
+  --train_corpus $CORPUS_FILE \
+  --bert_model $MODEL_DIR \
+  --output_dir $SAVE_DIR/lm_finetuning \
+  --epochs_to_generate $EPOCHS \
+  --max_seq_len $MAX_SEQ_LEN
 
 python3 lm_finetuning/finetune_on_pregenerated.py \
---pregenerated_data $SAVE_DIR/lm_finetuning \
---bert_model $MODEL_DIR \
---output_dir $FINETUNED_DIR \
---epochs $EPOCHS \
---gradient_accumulation_steps $ACC_STEPS \
---reduce_memory
+  --pregenerated_data $SAVE_DIR/lm_finetuning \
+  --bert_model $MODEL_DIR \
+  --output_dir $FINETUNED_DIR \
+  --epochs $EPOCHS \
+  --gradient_accumulation_steps $ACC_STEPS \
+  --reduce_memory

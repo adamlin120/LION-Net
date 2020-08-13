@@ -1,14 +1,14 @@
 import copy
 import csv
 import json
-import numpy as np
 import pickle
 import re
-import torch
-import torch.nn as nn
-
 from pathlib import Path
 from time import gmtime, strftime
+
+import numpy as np
+import torch
+import torch.nn as nn
 from tqdm import tqdm
 
 from modules.dataset import create_data_loader, transfer
@@ -17,7 +17,6 @@ from modules.metrics import compute_active_intent_acc
 from modules.metrics import compute_requested_slots_f1
 from modules.metrics import compute_slot_filling_acc
 from modules.utils import create_device, extract_cat_slots
-
 from trade.model import Model
 from trade.utils import extract_values
 
@@ -144,10 +143,10 @@ class Trainer:
         losses = self.cal_loss(batch, output)
         dec_losses, cxt_losses, req_losses, act_losses = losses
         loss = (
-            self.alpha * sum(dec_losses) / len(dec_losses) +
-            self.beta * sum(cxt_losses) / len(cxt_losses) +
-            self.gamma * sum(req_losses) / len(req_losses) +
-            self.delta * sum(act_losses) / len(act_losses))
+                self.alpha * sum(dec_losses) / len(dec_losses) +
+                self.beta * sum(cxt_losses) / len(cxt_losses) +
+                self.gamma * sum(req_losses) / len(req_losses) +
+                self.delta * sum(act_losses) / len(act_losses))
 
         if mode == "train":
             if hasattr(self, "update_freq"):
@@ -271,7 +270,7 @@ class Trainer:
             if self.__cur_epoch > 0:
                 if self.__cur_epoch < self.epochs:
                     self.logger.info(
-                        f"[*] Resume training (epoch {self.__cur_epoch+1}).")
+                        f"[*] Resume training (epoch {self.__cur_epoch + 1}).")
                     self.model.load_state(
                         files[-1],
                         getattr(self, "load_optim", True))

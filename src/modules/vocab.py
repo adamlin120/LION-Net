@@ -1,18 +1,10 @@
-import glob
-import json
-import pickle
-
-from pathlib import Path
-from tqdm import tqdm
-
-
 class Vocab:
     def __init__(self, counter, size):
         self._special_tokens = [
             "<PAD>", "<UNK>", "<BOS>", "<EOS>", "<DONTCARE>"]
         self._size = size
         self._idx2token = [token for token in self._special_tokens] + \
-            [token for token, _ in counter.most_common()]
+                          [token for token, _ in counter.most_common()]
         self._token2idx = {
             token: idx for idx, token in enumerate(self._idx2token)}
 

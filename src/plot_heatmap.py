@@ -1,16 +1,14 @@
 import argparse
-import ipdb
-import matplotlib
-import matplotlib.pyplot as plt
-import numpy as np
 import pickle
 import sys
-
-from box import Box
 from pathlib import Path
 
+import ipdb
+import matplotlib.pyplot as plt
+import numpy as np
+from box import Box
+
 from modules.logger import create_logger
-from modules.utils import create_device
 
 
 def parse_args():

@@ -1,4 +1,5 @@
 import mmap
+
 import torch
 
 
@@ -14,7 +15,7 @@ def get_num_lines(file_path):
 def create_device(device):
     return \
         torch.device('cuda:{}'.format(device)) \
-        if device >= 0 else torch.device('cpu')
+            if device >= 0 else torch.device('cpu')
 
 
 def extract_cat_slots(schemas, schema_vocab):

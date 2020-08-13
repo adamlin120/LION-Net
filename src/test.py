@@ -1,14 +1,13 @@
 import argparse
+import random
+import sys
+import warnings
+from pathlib import Path
+
 import ipdb
 import numpy as np
 import torch
-import random
-import subprocess
-import sys
-import warnings
-
 from box import Box
-from pathlib import Path
 
 from modules.logger import create_logger
 
@@ -16,9 +15,9 @@ from modules.logger import create_logger
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument(
-            '-c', '--config', dest='config_path',
-            default='./config.yaml', type=Path,
-            help='the path of config file')
+        '-c', '--config', dest='config_path',
+        default='./config.yaml', type=Path,
+        help='the path of config file')
     args = parser.parse_args()
     return vars(args)
 

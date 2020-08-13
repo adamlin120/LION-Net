@@ -1,7 +1,7 @@
+from collections import Counter
+
 import torch
 import torch.nn as nn
-
-from collections import Counter
 from fuzzywuzzy import fuzz
 
 

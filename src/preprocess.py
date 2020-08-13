@@ -1,16 +1,16 @@
 import argparse
 import copy
-import ipdb
 import json
-import numpy as np
 import pickle
-import spacy
 import sys
-import torch
-
-from box import Box
 from collections import Counter
 from pathlib import Path
+
+import ipdb
+import numpy as np
+import spacy
+import torch
+from box import Box
 from tqdm import tqdm
 
 from modules.logger import create_logger
@@ -64,7 +64,6 @@ def count_words(dialogues, schemas):
 
 
 def build_dataset(dialogues, vocab, schema_vocab, schemas):
-
     service2idx, idx2service = schema_vocab[0]
     intent2idx, idx2intent = schema_vocab[1]
     slot2idx, idx2slot = schema_vocab[2]
