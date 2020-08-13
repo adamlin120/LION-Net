@@ -9,9 +9,7 @@ import sys
 import torch
 
 from box import Box
-from collections import defaultdict, Counter
-from functools import reduce
-from operator import add
+from collections import Counter
 from pathlib import Path
 from tqdm import tqdm
 

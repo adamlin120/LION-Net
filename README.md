@@ -18,7 +18,7 @@ Required python packages are listed in *requirements.txt*.
 
 ```bash
 pip install -r requirements.txt
-python -m spacy download en_core_web_sm
+python -m spacy download en
 ```
 
 ## Dataset
@@ -43,8 +43,10 @@ unzip glove.840B.300d.zip
 
 After downloading you need to put them into the directory you want.
 #### Create dataset
-    python3 preprocess.py
-    python3 extract_schema.py
+```bash
+python3 extract_schema.py
+python3 preprocess.py
+```
 
 ## Training
 First, you need to make a copy of config.yaml.example and change the name to config.yaml

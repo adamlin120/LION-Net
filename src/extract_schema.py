@@ -1,7 +1,6 @@
 import argparse
 import ipdb
 import json
-import numpy as np
 import pickle
 import torch
 import spacy
@@ -11,8 +10,8 @@ from box import Box
 from pathlib import Path
 from tqdm import tqdm
 
-from pytorch_transformers import BertTokenizer
-from pytorch_transformers import BertConfig, BertModel
+from transformers import BertTokenizer
+from transformers import BertConfig, BertModel
 
 from modules.logger import create_logger
 from modules.utils import create_device
@@ -136,7 +135,7 @@ def main(config_path):
     device = create_device(config.train.device)
 
     tokenizer = BertTokenizer.from_pretrained(
-        transfo_dir,
+        str(transfo_dir),
         do_lower_case=(not config.data.cased))
 
     global CLS
@@ -145,7 +144,7 @@ def main(config_path):
     CLS, SEP, PAD = tokenizer.convert_tokens_to_ids(
         ["[CLS]", "[SEP]", "[PAD]"])
 
-    bert_config = BertConfig.from_pretrained(transfo_dir)
+    bert_config = BertConfig.from_pretrained(str(transfo_dir))
     # To extract representations from other layers
     bert_config.output_hidden_states = True
     model = BertModel(bert_config)

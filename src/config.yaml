@@ -24,7 +24,7 @@ model_param:
     rnn: "GRU"
     emb:
         share_embed: True
-        embed_path: "/tmp/dstc8-track4/save/embed.pkl"
+        embed_path: "../save/embed.pkl"
         # dim: 300
         freeze: False
     enc:

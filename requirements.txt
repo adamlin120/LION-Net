@@ -5,3 +5,6 @@ ipdb
 spacy
 transformers
 tqdm
+PyYAML
+fuzzywuzzy
+python-Levenshtein
