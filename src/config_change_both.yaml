@@ -1,6 +1,6 @@
 data:
-  data_dir: "../dstc8-schema-guided-dialogue-master/"
-  save_dir: "../save/"
+  data_dir: "../data/change_both/"
+  save_dir: "../save_change_both/"
   transfo_dir: "bert-base-cased/"
   embed_path: "../glove.840B.300d.txt"
   cased: True
@@ -70,7 +70,7 @@ train:
   max_desc_len: 30
   max_val_len: 10
   epochs: 5
-  batch_size: 64
+  batch_size: 32
   alpha: 0.4 # value output
   beta: 0.4 # context gate
   gamma: 0.1 # requested slots
