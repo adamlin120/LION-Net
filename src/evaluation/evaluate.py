@@ -20,15 +20,15 @@ from __future__ import division
 from __future__ import print_function
 
 import collections
+import csv
 import json
 import os
 import re
-import csv
 
 import metrics
 import numpy as np
-import tensorflow as tf
 import tensorboard as tb
+import tensorflow as tf
 
 tf.io.gfile = tb.compat.tensorflow_stub.io.gfile
 flags = tf.flags

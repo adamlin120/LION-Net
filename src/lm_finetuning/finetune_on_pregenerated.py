@@ -1,21 +1,19 @@
-from argparse import ArgumentParser
-from pathlib import Path
-import os
-import torch
-import logging
 import json
+import logging
 import random
-import numpy as np
+from argparse import ArgumentParser
 from collections import namedtuple
+from pathlib import Path
 from tempfile import TemporaryDirectory
 
+import numpy as np
+import torch
+from pytorch_transformers.modeling_bert import BertForPreTraining
+from pytorch_transformers.optimization import AdamW, WarmupLinearSchedule
+from pytorch_transformers.tokenization_bert import BertTokenizer
 from torch.utils.data import DataLoader, Dataset, RandomSampler
 from torch.utils.data.distributed import DistributedSampler
 from tqdm import tqdm
-
-from pytorch_transformers.modeling_bert import BertForPreTraining
-from pytorch_transformers.tokenization_bert import BertTokenizer
-from pytorch_transformers.optimization import AdamW, WarmupLinearSchedule
 
 InputFeatures = namedtuple(
     "InputFeatures", "input_ids input_mask segment_ids lm_label_ids is_next"
