@@ -218,7 +218,7 @@ class Tester:
                                                              embs, val_emb, self.similarity)])
                         except IndexError:
                             pass
-                    elif self.fix_syntax:
+                    elif False and self.fix_syntax:
                         for mark in self.trim_front:
                             try:
                                 if mark in p and p[p.index(mark) - 1] == " ":
@@ -234,6 +234,9 @@ class Tester:
                             except IndexError:
                                 pass
                         final_preds[sidx].append(p)
+                    else:
+                        final_preds[sidx].append(p)
+
             final_slot_preds.append(final_preds)
 
         slot_value_preds = []
