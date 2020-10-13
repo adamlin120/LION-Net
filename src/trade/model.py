@@ -20,7 +20,8 @@ class Model:
 
         self._optim = getattr(torch.optim, config.optim)(
             filter(lambda p: p.requires_grad, self._net.parameters()),
-            **config.optim_param)
+            **config.optim_param,
+        )
 
     def train(self):
         self._net.train()
@@ -48,45 +49,50 @@ class Model:
 
     def clip_grad(self, max_norm):
         nn.utils.clip_grad_norm_(
-            filter(lambda p: p.requires_grad, self._net.parameters()),
-            max_norm)
+            filter(lambda p: p.requires_grad, self._net.parameters()), max_norm
+        )
 
     def update(self):
         self._optim.step()
 
     def save_state(self, epoch, stats, ckpt_dir):
-        ckpt_path = ckpt_dir / f'epoch-{epoch:0>2}.ckpt'
-        torch.save({
-            'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
-            'epoch': epoch,
-            'stats': stats,
-            'net_state': self._net.state_dict(),
-            'optim_state': self._optim.state_dict()}, ckpt_path)
+        ckpt_path = ckpt_dir / f"epoch-{epoch:0>2}.ckpt"
+        torch.save(
+            {
+                "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                "epoch": epoch,
+                "stats": stats,
+                "net_state": self._net.state_dict(),
+                "optim_state": self._optim.state_dict(),
+            },
+            ckpt_path,
+        )
         if self.compare(stats, self._stats):
-            best_ckpt_path = ckpt_dir / 'best.ckpt'
+            best_ckpt_path = ckpt_dir / "best.ckpt"
             subprocess.call(["cp", ckpt_path, best_ckpt_path])
             self._stats = stats
 
     def load_state(
-            self,
-            ckpt_path,
-            load_optim=True,
-            save_device=None,
-            load_device=None,
-            verbose=True):
+        self,
+        ckpt_path,
+        load_optim=True,
+        save_device=None,
+        load_device=None,
+        verbose=True,
+    ):
         if verbose:
             self._logger.info("[*] Load model.")
         if save_device is not None and load_device is not None:
             ckpt = torch.load(
-                ckpt_path,
-                map_location={f"cuda:{save_device}": f"cuda:{load_device}"})
+                ckpt_path, map_location={f"cuda:{save_device}": f"cuda:{load_device}"}
+            )
         else:
             ckpt = torch.load(ckpt_path)
-        self._net.load_state_dict(ckpt['net_state'])
+        self._net.load_state_dict(ckpt["net_state"])
         self._net.to(self._device)
         if load_optim:
-            self._optim.load_state_dict(ckpt['optim_state'])
-        self._stats = ckpt['stats']
+            self._optim.load_state_dict(ckpt["optim_state"])
+        self._stats = ckpt["stats"]
         for state in self._optim.state.values():
             for k, v in state.items():
                 if torch.is_tensor(v):
@@ -95,11 +101,8 @@ class Model:
             self._logger.info(f"[-] Model loaded from {ckpt_path}.")
 
     def load_best_state(
-            self,
-            ckpt_dir,
-            load_optim=True,
-            save_device=None,
-            load_device=None):
+        self, ckpt_dir, load_optim=True, save_device=None, load_device=None
+    ):
         # ckpt_path = ckpt_dir / 'best.ckpt'
         ckpt_files = list(ckpt_dir.glob("*.ckpt"))
         ckpt_files.sort()
@@ -107,7 +110,7 @@ class Model:
         self.load_state(ckpt_path, load_optim, save_device, load_device)
 
     def compare(self, stats, best_stats):
-        if not best_stats or stats['joint_acc'] > best_stats['joint_acc']:
+        if not best_stats or stats["joint_acc"] > best_stats["joint_acc"]:
             best_stats = stats
             return True
         else:

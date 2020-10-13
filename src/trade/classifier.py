@@ -7,9 +7,7 @@ class Classifier(nn.Module):
         super(Classifier, self).__init__()
         self.rnn_type = getattr(config, "rnn", "GRU")
         self.layers = nn.ModuleList()
-        i_dim = (
-                config.enc.dim * config.enc.lyr * (1 + config.enc.bid) +
-                config.sch.dim)
+        i_dim = config.enc.dim * config.enc.lyr * (1 + config.enc.bid) + config.sch.dim
         o_dim = config.cls.dim
         for _ in range(config.cls.lyr):
             self.layers.append(nn.Linear(i_dim, o_dim))

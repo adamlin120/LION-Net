@@ -12,7 +12,8 @@ class Encoder(nn.Module):
             num_layers=config.enc.lyr,
             dropout=(config.enc.drp if config.enc.lyr > 1 else 0),
             bidirectional=config.enc.bid,
-            batch_first=True)
+            batch_first=True,
+        )
         self.emb = emb
 
     def forward(self, cxt):

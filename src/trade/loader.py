@@ -17,14 +17,16 @@ class Loader(nn.Module):
                 num_layers=config.sch.lyr,
                 dropout=(config.sch.drp if config.sch.lyr > 1 else 0),
                 bidirectional=config.sch.bid,
-                batch_first=True)
+                batch_first=True,
+            )
             self.int_rnn = getattr(torch.nn, self.type)(
                 input_size=config.emb.dim,
                 hidden_size=config.sch.dim,
                 num_layers=config.sch.lyr,
                 dropout=(config.sch.drp if config.sch.lyr > 1 else 0),
                 bidirectional=config.sch.bid,
-                batch_first=True)
+                batch_first=True,
+            )
             if self.use_ser:
                 self.ser_rnn = getattr(torch.nn, self.type)(
                     input_size=config.emb.dim,
@@ -32,15 +34,13 @@ class Loader(nn.Module):
                     num_layers=config.sch.lyr,
                     dropout=(config.sch.drp if config.sch.lyr > 1 else 0),
                     bidirectional=config.sch.bid,
-                    batch_first=True)
-                input_dim = (
-                        config.sch.dim * (1 + config.sch.bid) *
-                        config.sch.lyr * 2)
+                    batch_first=True,
+                )
+                input_dim = config.sch.dim * (1 + config.sch.bid) * config.sch.lyr * 2
                 self.slt_proj = nn.Linear(input_dim, config.sch.dim)
                 self.int_proj = nn.Linear(input_dim, config.sch.dim)
             else:
-                input_dim = (
-                        config.sch.dim * (1 + config.sch.bid) * config.sch.lyr)
+                input_dim = config.sch.dim * (1 + config.sch.bid) * config.sch.lyr
                 self.slt_proj = nn.Linear(input_dim, config.sch.dim)
                 self.int_proj = nn.Linear(input_dim, config.sch.dim)
             self.emb = emb
@@ -99,14 +99,10 @@ class Loader(nn.Module):
         return out
 
     def load_embed(self, file_path, device):
-        ser_weight, int_weight, slt_weight = \
-            pickle.load(open(file_path, 'rb'))
-        self.ser_emb = nn.Embedding.from_pretrained(
-            ser_weight, freeze=True)
-        self.int_emb = nn.Embedding.from_pretrained(
-            int_weight, freeze=True)
-        self.slt_emb = nn.Embedding.from_pretrained(
-            slt_weight, freeze=True)
+        ser_weight, int_weight, slt_weight = pickle.load(open(file_path, "rb"))
+        self.ser_emb = nn.Embedding.from_pretrained(ser_weight, freeze=True)
+        self.int_emb = nn.Embedding.from_pretrained(int_weight, freeze=True)
+        self.slt_emb = nn.Embedding.from_pretrained(slt_weight, freeze=True)
         self.ser_emb.to(device=device)
         self.int_emb.to(device=device)
         self.slt_emb.to(device=device)

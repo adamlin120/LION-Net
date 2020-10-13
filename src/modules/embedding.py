@@ -11,17 +11,13 @@ class Embedding(nn.Module):
         logger = create_logger(name="EMBED")
         UNK = vocab.convert_tokens_to_indices(["<UNK>"])[0]
         PAD = vocab.convert_tokens_to_indices(["<PAD>"])[0]
-        if hasattr(config.emb, 'embed_path'):
-            weight = pickle.load(open(config.emb.embed_path, 'rb'))
+        if hasattr(config.emb, "embed_path"):
+            weight = pickle.load(open(config.emb.embed_path, "rb"))
             self.model = nn.Embedding.from_pretrained(
-                weight,
-                freeze=config.emb.freeze,
-                padding_idx=PAD)
+                weight, freeze=config.emb.freeze, padding_idx=PAD
+            )
         else:
-            self.model = nn.Embedding(
-                len(vocab),
-                config.emb.dim,
-                padding_idx=PAD)
+            self.model = nn.Embedding(len(vocab), config.emb.dim, padding_idx=PAD)
             logger.info("[-] Train from scratch.")
 
     def forward(self, i):

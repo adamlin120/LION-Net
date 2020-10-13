@@ -14,9 +14,13 @@ from modules.logger import create_logger
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        '-c', '--config', dest='config_path',
-        default='./config.yaml', type=Path,
-        help='the path of config file')
+        "-c",
+        "--config",
+        dest="config_path",
+        default="./config.yaml",
+        type=Path,
+        help="the path of config file",
+    )
     args = parser.parse_args()
     return vars(args)
 
@@ -38,9 +42,7 @@ def plot(matrix, labels, filename):
     ax.set_xticklabels(labels)
     ax.set_yticklabels(labels)
 
-    plt.setp(
-        ax.get_xticklabels(), rotation=45,
-        ha="right", rotation_mode="anchor")
+    plt.setp(ax.get_xticklabels(), rotation=45, ha="right", rotation_mode="anchor")
 
     fig.tight_layout()
     plt.savefig(filename)
@@ -49,7 +51,7 @@ def plot(matrix, labels, filename):
 def main(config_path):
     config = Box.from_yaml(config_path.open())
     logger = create_logger(name="MAIN")
-    logger.info(f'[-] Config loaded from {config_path}')
+    logger.info(f"[-] Config loaded from {config_path}")
 
     data_dir = Path(config.data.data_dir)
     save_dir = Path(config.data.save_dir)
@@ -62,12 +64,12 @@ def main(config_path):
     train_embed_file = save_dir / "train_schema_embed.pkl"
     valid_embed_file = save_dir / "valid_schema_embed.pkl"
 
-    train_vocab = pickle.load(open(train_vocab_file, 'rb'))
-    valid_vocab = pickle.load(open(valid_vocab_file, 'rb'))
-    train_embed = pickle.load(open(train_embed_file, 'rb'))
-    valid_embed = pickle.load(open(valid_embed_file, 'rb'))
+    train_vocab = pickle.load(open(train_vocab_file, "rb"))
+    valid_vocab = pickle.load(open(valid_vocab_file, "rb"))
+    train_embed = pickle.load(open(train_embed_file, "rb"))
+    valid_embed = pickle.load(open(valid_embed_file, "rb"))
 
-    plt.rcParams.update({'font.size': 8})
+    plt.rcParams.update({"font.size": 8})
 
     _, idx2service = train_vocab[0]
     matrix = get_matrix(train_embed[0])
@@ -77,7 +79,7 @@ def main(config_path):
     matrix = get_matrix(valid_embed[0])
     plot(matrix, idx2service, fig_dir / "valid_service.pdf")
 
-    plt.rcParams.update({'font.size': 6})
+    plt.rcParams.update({"font.size": 6})
 
     _, idx2intent = train_vocab[1]
     matrix = get_matrix(train_embed[1])

@@ -35,6 +35,5 @@ def extract_values(preds, gates, dc_gate, multi_value, vocab, ext_list):
                 values.append([value])
     for i, vals in enumerate(values):
         for j, val in enumerate(vals):
-            values[i][j] = ' '.join(
-                vocab.convert_indices_to_tokens(val, ext_list))
+            values[i][j] = " ".join(vocab.convert_indices_to_tokens(val, ext_list))
     return values

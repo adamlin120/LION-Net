@@ -24,29 +24,27 @@ class Attn(nn.Module):
 
     def forward(self, k, v, q, m=None):
         """
-            All inputs are supposed to be float tensors.
+        All inputs are supposed to be float tensors.
 
-            k:                  batch_size * seq_len * k_dim
-            v:                  batch_size * seq_len * v_dim
-            q:                  batch_size * q_dim
-            m (optional):       batch_size * seq_len
+        k:                  batch_size * seq_len * k_dim
+        v:                  batch_size * seq_len * v_dim
+        q:                  batch_size * q_dim
+        m (optional):       batch_size * seq_len
         """
         if self.method != "none":
             energy = self.score(q, k)
             if m is not None:
-                energy.masked_fill_(float('-inf'))
+                energy.masked_fill_(float("-inf"))
             score = nn.Softmax(dim=1)(energy)
             attn = (score.unsqueeze(2) * v).sum(dim=1, keepdim=True)
             return score, attn
         else:
-            score = torch.zeros(
-                v.size(0), v.size(1), device=v.device)
-            attn = torch.FloatTensor(
-                v.size(0), 1, self._o_dim, device=v.device)
+            score = torch.zeros(v.size(0), v.size(1), device=v.device)
+            attn = torch.FloatTensor(v.size(0), 1, self._o_dim, device=v.device)
             return score, attn
 
     def score(self, q, k):
-        if self.method == 'mul':
+        if self.method == "mul":
             q = self.q_proj(q).unsqueeze(2)
             energy = torch.bmm(v, q).squeeze(2)
             # re-scaled version

@@ -204,8 +204,9 @@ def get_active_intent_accuracy(frame_ref, frame_hyp):
     Returns:
       1.0 if the intent prediction is correct, otherwise 0.0.
     """
-    return float(frame_ref["state"]["active_intent"] == frame_hyp["state"]
-    ["active_intent"])
+    return float(
+        frame_ref["state"]["active_intent"] == frame_hyp["state"]["active_intent"]
+    )
 
 
 def get_slot_tagging_f1(frame_ref, frame_hyp, utt, service):
@@ -223,18 +224,20 @@ def get_slot_tagging_f1(frame_ref, frame_hyp, utt, service):
       A F1Scores object containing F1, precision, and recall scores.
     """
 
-    list_noncat_slots = [
-        s["name"] for s in service["slots"] if not s["is_categorical"]
-    ]
+    list_noncat_slots = [s["name"] for s in service["slots"] if not s["is_categorical"]]
     if "slots" not in frame_hyp:
         return None
     else:
-        list_ref = [(s["slot"], s["value"] if isinstance(s["value"], str) else s["value"][0])
-                    for s in frame_ref["slots"]
-                    if s["slot"] in list_noncat_slots]
-        list_hyp = [(s["slot"], s["value"] if isinstance(s["value"], str) else s["value"][0])
-                    for s in frame_hyp["slots"]
-                    if s["slot"] in list_noncat_slots]
+        list_ref = [
+            (s["slot"], s["value"] if isinstance(s["value"], str) else s["value"][0])
+            for s in frame_ref["slots"]
+            if s["slot"] in list_noncat_slots
+        ]
+        list_hyp = [
+            (s["slot"], s["value"] if isinstance(s["value"], str) else s["value"][0])
+            for s in frame_hyp["slots"]
+            if s["slot"] in list_noncat_slots
+        ]
         return compute_f1(list_ref, list_hyp)
 
 
@@ -248,9 +251,9 @@ def get_requested_slots_f1(frame_ref, frame_hyp):
     Returns:
       A F1Scores object containing F1, precision, and recall scores.
     """
-    return compute_f1(frame_ref["state"]["requested_slots"],
-                      frame_hyp["state"]["requested_slots"])
-
+    return compute_f1(
+        frame_ref["state"]["requested_slots"], frame_hyp["state"]["requested_slots"]
+    )
 
 
 def get_average_and_joint_goal_accuracy(frame_ref, frame_hyp, service, slot_acc):
@@ -269,8 +272,11 @@ def get_average_and_joint_goal_accuracy(frame_ref, frame_hyp, service, slot_acc)
     goal_acc = {}
 
     list_acc, slot_active, slot_cat, slot_acc = compare_slot_values(
-        frame_ref["state"]["slot_values"], frame_hyp["state"]["slot_values"],
-        service, slot_acc)
+        frame_ref["state"]["slot_values"],
+        frame_hyp["state"]["slot_values"],
+        service,
+        slot_acc,
+    )
 
     # (4) Average goal accuracy.
     active_acc = [acc for acc, active in zip(list_acc, slot_active) if active]

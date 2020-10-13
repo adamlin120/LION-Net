@@ -11,9 +11,13 @@ from tqdm import tqdm
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        '-c', '--config', dest='config_path',
-        default='./config.yaml', type=Path,
-        help='the path of config file')
+        "-c",
+        "--config",
+        dest="config_path",
+        default="./config.yaml",
+        type=Path,
+        help="the path of config file",
+    )
     args = parser.parse_args()
     return vars(args)
 
@@ -28,11 +32,11 @@ def main(config_path):
 
     files = list((data_dir / "train").glob("dialogues_*.json"))
 
-    with open(corpus_path, 'w') as file:
+    with open(corpus_path, "w") as file:
         for f in tqdm(files, leave=False):
             dialogs = json.load(open(f))
             for dialog in tqdm(dialogs, leave=False):
-                for turn in dialog['turns']:
+                for turn in dialog["turns"]:
                     file.write(f"{turn['utterance']}\n")
                 file.write("\n")
 

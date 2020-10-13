@@ -18,8 +18,7 @@ class Decoder(nn.Module):
         self.pad = vocab.convert_tokens_to_indices(["<PAD>"])[0]
         self.dontcare = vocab.convert_tokens_to_indices(["<DONTCARE>"])[0]
 
-        self.special_tokens = \
-            [self.bos, self.eos, self.unk, self.pad, self.dontcare]
+        self.special_tokens = [self.bos, self.eos, self.unk, self.pad, self.dontcare]
 
         self.emb = emb
         self.rnn = getattr(torch.nn, self.type)(
@@ -27,46 +26,41 @@ class Decoder(nn.Module):
             hidden_size=config.dec.dim,
             num_layers=config.dec.lyr,
             dropout=(config.dec.drp if config.dec.lyr > 1 else 0),
-            batch_first=True)
+            batch_first=True,
+        )
         self.h_proj = nn.Linear(
             config.enc.dim * (1 + config.enc.bid) * config.enc.lyr,
-            config.dec.dim * config.dec.lyr)
-        self.hs_proj = nn.Linear(
-            config.sch.dim,
-            config.dec.dim * config.dec.lyr)
+            config.dec.dim * config.dec.lyr,
+        )
+        self.hs_proj = nn.Linear(config.sch.dim, config.dec.dim * config.dec.lyr)
         if self.type == "GRU":
             self.attn = Attn(
                 method=getattr(config.dec, "attn", "none"),
                 k_dim=config.enc.dim * (1 + config.enc.bid),
                 v_dim=config.enc.dim * (1 + config.enc.bid),
-                q_dim=config.dec.dim * config.dec.lyr)
-            self.gate = nn.Linear(
-                config.dec.dim + config.emb.dim + self.attn.o_dim, 1)
+                q_dim=config.dec.dim * config.dec.lyr,
+            )
+            self.gate = nn.Linear(config.dec.dim + config.emb.dim + self.attn.o_dim, 1)
         elif self.type == "LSTM":
             self.c_proj = nn.Linear(
                 config.enc.dim * (1 + config.enc.bid) * config.enc.lyr,
-                config.dec.dim * config.dec.lyr)
-            self.cs_proj = nn.Linear(
-                config.sch.dim,
-                config.dec.dim * config.dec.lyr)
+                config.dec.dim * config.dec.lyr,
+            )
+            self.cs_proj = nn.Linear(config.sch.dim, config.dec.dim * config.dec.lyr)
             self.attn = Attn(
                 method=getattr(config.dec, "attn", "none"),
                 k_dim=config.enc.dim * (1 + config.enc.bid),
                 v_dim=config.enc.dim * (1 + config.enc.bid),
                 q_dim=config.dec.dim * config.dec.lyr * 2,
-                device=self.device)
+                device=self.device,
+            )
             self.gate = nn.Linear(
-                (config.dec_dim * 2) + config.emb.dim + self.attn.o_dim, 1)
-        self.proj1 = nn.Linear(
-            config.dec.dim + self.attn.o_dim, config.dec.dim)
-        self.proj2 = nn.Linear(
-            config.dec.dim, self.emb.num_embeddings)
+                (config.dec_dim * 2) + config.emb.dim + self.attn.o_dim, 1
+            )
+        self.proj1 = nn.Linear(config.dec.dim + self.attn.o_dim, config.dec.dim)
+        self.proj2 = nn.Linear(config.dec.dim, self.emb.num_embeddings)
 
-    def forward(
-            self,
-            enc_o, sch_o,
-            ext_z, ext_i, unk_v,
-            cat_f, max_len=10):
+    def forward(self, enc_o, sch_o, ext_z, ext_i, unk_v, cat_f, max_len=10):
         logits = []
         if self.type == "GRU":
             enc_o, enc_h = enc_o
@@ -85,14 +79,13 @@ class Decoder(nn.Module):
         for idx in range(max_len):
             if idx == 0:
                 x = torch.full(
-                    (enc_o.size(0), 1), self.bos,
-                    dtype=torch.long, device=enc_o.device)
+                    (enc_o.size(0), 1), self.bos, dtype=torch.long, device=enc_o.device
+                )
             else:
                 if unk_v is not None:
                     x = unk_v[:, idx - 1].unsqueeze(1)
                 else:
-                    x = last_x.masked_fill(
-                        (last_x >= self.vocab_size), self.unk)
+                    x = last_x.masked_fill((last_x >= self.vocab_size), self.unk)
 
             dec_i = self.emb(x)
             if self.type == "GRU":
@@ -144,16 +137,14 @@ class Decoder(nn.Module):
         flat_enc_h = enc_h.permute(1, 0, 2).reshape(bs, -1)
         proj_enc_h = self.h_proj(flat_enc_h)
         dec_h = torch.relu(proj_enc_h.reshape(bs, -1, self.dim))
-        sch_h = torch.relu(
-            self.hs_proj(sch_o).reshape(bs, dec_h.size(1), self.dim))
+        sch_h = torch.relu(self.hs_proj(sch_o).reshape(bs, dec_h.size(1), self.dim))
         dec_h = (dec_h + sch_h).permute(1, 0, 2)
         dec_h = dec_h.contiguous()
         if enc_c is not None:
             flat_enc_c = enc_c.permute(1, 0, 2).reshape(bs, -1)
             proj_enc_c = self.c_proj(flat_enc_c)
             dec_c = torch.relu(proj_enc_c.reshape(bs, -1, self.dim))
-            sch_c = torch.relu(
-                self.cs_proj(sch_o).reshape(bs, dec_c.size(1), self.dim))
+            sch_c = torch.relu(self.cs_proj(sch_o).reshape(bs, dec_c.size(1), self.dim))
             dec_c = (dec_c + sch_c).permute(1, 0, 2)
             dec_c = dec_c.contiguous()
             return dec_h, dec_c

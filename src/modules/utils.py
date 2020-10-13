@@ -13,19 +13,19 @@ def get_num_lines(file_path):
 
 
 def create_device(device):
-    return \
-        torch.device('cuda:{}'.format(device)) \
-            if device >= 0 else torch.device('cpu')
+    return (
+        torch.device("cuda:{}".format(device)) if device >= 0 else torch.device("cpu")
+    )
 
 
 def extract_cat_slots(schemas, schema_vocab):
     slot2idx = schema_vocab[2][0]
     cat_slots = set()
     for schema in schemas:
-        service_name = schema['service_name']
-        for slot in schema['slots']:
-            slot_name = slot['name']
-            if slot['is_categorical']:
+        service_name = schema["service_name"]
+        for slot in schema["slots"]:
+            slot_name = slot["name"]
+            if slot["is_categorical"]:
                 idx = slot2idx[(service_name, slot_name)]
                 cat_slots.add(idx)
     return cat_slots

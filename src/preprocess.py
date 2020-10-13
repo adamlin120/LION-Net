@@ -17,16 +17,20 @@ from modules.logger import create_logger
 from modules.utils import get_num_lines
 from modules.vocab import Vocab
 
-nlp = spacy.load('en')
+nlp = spacy.load("en")
 tokenizer = spacy.lang.en.English().Defaults().create_tokenizer(nlp)
 
 
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        '-c', '--config', dest='config_path',
-        default='./config.yaml', type=Path,
-        help='the path of config file')
+        "-c",
+        "--config",
+        dest="config_path",
+        default="./config.yaml",
+        type=Path,
+        help="the path of config file",
+    )
     args = parser.parse_args()
     return vars(args)
 
@@ -43,20 +47,20 @@ def gen_lists(services, fields):
 def count_words(dialogues, schemas):
     counter = Counter()
     for dialog in tqdm(dialogues, leave=False):
-        for turn in dialog['turns']:
-            utterance = tokenizer(turn['utterance'])
+        for turn in dialog["turns"]:
+            utterance = tokenizer(turn["utterance"])
             counter.update([word.text for word in utterance])
     for schema in tqdm(schemas, leave=False):
-        description = tokenizer(schema['description'])
+        description = tokenizer(schema["description"])
         counter.update([word.text.lower() for word in description] * 50)
-        for intent in schema['intents']:
-            description = tokenizer(intent['description'])
+        for intent in schema["intents"]:
+            description = tokenizer(intent["description"])
             counter.update([word.text.lower() for word in description] * 50)
-        for slot in schema['slots']:
-            description = tokenizer(slot['description'])
+        for slot in schema["slots"]:
+            description = tokenizer(slot["description"])
             counter.update([word.text.lower() for word in description] * 50)
-            if slot['is_categorical']:
-                for value in slot['possible_values']:
+            if slot["is_categorical"]:
+                for value in slot["possible_values"]:
                     value = tokenizer(value)
                     counter.update([word.text for word in value] * 50)
 
@@ -84,54 +88,52 @@ def build_dataset(dialogues, vocab, schema_vocab, schemas):
     for dialog in tqdm(dialogues):
         utterances = []
         slots = []
-        for turn in dialog['turns']:
-            utterance = [
-                word.text for word in tokenizer(turn['utterance'])]
+        for turn in dialog["turns"]:
+            utterance = [word.text for word in tokenizer(turn["utterance"])]
             utterance = ["<BOS>"] + utterance + ["<EOS>"]
             utterances += utterance
 
-            if turn['speaker'] == "USER":
+            if turn["speaker"] == "USER":
                 intent_mask, slot_mask = [], []
-                for frame in turn['frames']:
+                for frame in turn["frames"]:
                     example = {}
-                    example['utterances'] = copy.deepcopy(utterances)
-                    example['utterances'] = list(
+                    example["utterances"] = copy.deepcopy(utterances)
+                    example["utterances"] = list(
                         vocab.convert_tokens_to_indices(
-                            example['utterances'], mode='ext'))
+                            example["utterances"], mode="ext"
+                        )
+                    )
                     # extract intents and slots
-                    service_name = frame['service']
+                    service_name = frame["service"]
                     service_idx = service2idx[service_name]
-                    example['service_idx'] = service_idx
-                    example['intent_list'] = intent_lists[service_idx]
-                    example['slot_list'] = slot_lists[service_idx]
-                    example['is_categorical'] = service2cat[service_name]
-                    example['possible_values'] = []
-                    for slot_idx in example['slot_list']:
-                        example['possible_values'].append(
-                            slot2values[slot_idx])
+                    example["service_idx"] = service_idx
+                    example["intent_list"] = intent_lists[service_idx]
+                    example["slot_list"] = slot_lists[service_idx]
+                    example["is_categorical"] = service2cat[service_name]
+                    example["possible_values"] = []
+                    for slot_idx in example["slot_list"]:
+                        example["possible_values"].append(slot2values[slot_idx])
 
-                    if 'state' in frame:
+                    if "state" in frame:
                         # get requested slots
-                        requested_slots = np.zeros(
-                            (len(example['slot_list'])))
-                        for slot_name in frame['state']['requested_slots']:
+                        requested_slots = np.zeros((len(example["slot_list"])))
+                        for slot_name in frame["state"]["requested_slots"]:
                             slot_idx = slot2idx[(service_name, slot_name)]
-                            pos = example['slot_list'].index(slot_idx)
+                            pos = example["slot_list"].index(slot_idx)
                             requested_slots[pos] = 1
-                        example['requested_slots'] = requested_slots
+                        example["requested_slots"] = requested_slots
                         # get active intent
-                        intent_name = frame['state']['active_intent']
+                        intent_name = frame["state"]["active_intent"]
                         if (service_name, intent_name) not in intent2idx:
                             intent_name = "NONE"
                         intent_idx = intent2idx[(service_name, intent_name)]
-                        active_intent = \
-                            example['intent_list'].index(intent_idx)
-                        example['active_intent'] = active_intent
+                        active_intent = example["intent_list"].index(intent_idx)
+                        example["active_intent"] = active_intent
                         # get slots and values
-                        example['slot_values'] = []
-                        ext_list = example['utterances'][1]
+                        example["slot_values"] = []
+                        ext_list = example["utterances"][1]
 
-                        slot_values = frame['state']['slot_values']
+                        slot_values = frame["state"]["slot_values"]
                         for slot_name, values in slot_values.items():
                             slot_idx = slot2idx[(service_name, slot_name)]
                             value_idxes = []
@@ -139,16 +141,13 @@ def build_dataset(dialogues, vocab, schema_vocab, schemas):
                                 if value == "dontcare":
                                     value_idxes.append([DONTCARE])
                                 else:
-                                    value = [
-                                        word.text
-                                        for word in tokenizer(value)]
+                                    value = [word.text for word in tokenizer(value)]
                                     value_idxes.append(
                                         vocab.convert_tokens_to_indices(
-                                            value,
-                                            mode='ext',
-                                            ext_list=ext_list))
-                            example['slot_values'].append(
-                                [slot_idx, value_idxes])
+                                            value, mode="ext", ext_list=ext_list
+                                        )
+                                    )
+                            example["slot_values"].append([slot_idx, value_idxes])
                     dataset.append(example)
     return dataset
 
@@ -159,19 +158,19 @@ def main(config_path):
     data_dir = Path(config.data.data_dir)
     save_dir = Path(config.data.save_dir)
 
-    train_dir = data_dir / 'train'
-    sd_train_files = list(train_dir.glob('dialogues_*.json'))
+    train_dir = data_dir / "train"
+    sd_train_files = list(train_dir.glob("dialogues_*.json"))
     md_train_files = []
 
-    valid_dir = data_dir / 'dev'
-    sd_valid_files = list(valid_dir.glob('dialogues_*.json'))
+    valid_dir = data_dir / "dev"
+    sd_valid_files = list(valid_dir.glob("dialogues_*.json"))
     md_valid_files = []
 
     is_test = (data_dir / "test").exists()
     # Wait for test data release
     if is_test:
-        test_dir = data_dir / 'test'
-        sd_test_files = list(test_dir.glob('dialogues_*.json'))
+        test_dir = data_dir / "test"
+        sd_test_files = list(test_dir.glob("dialogues_*.json"))
         md_test_files = []
 
     train_files, valid_files, test_files = [], [], []
@@ -208,8 +207,8 @@ def main(config_path):
 
     train_schema_vocab_file = save_dir / "train_schema_vocab.pkl"
     valid_schema_vocab_file = save_dir / "valid_schema_vocab.pkl"
-    train_schema_vocab = pickle.load(open(train_schema_vocab_file, 'rb'))
-    valid_schema_vocab = pickle.load(open(valid_schema_vocab_file, 'rb'))
+    train_schema_vocab = pickle.load(open(train_schema_vocab_file, "rb"))
+    valid_schema_vocab = pickle.load(open(valid_schema_vocab_file, "rb"))
 
     train_dialogues = []
     for f in train_files:
@@ -223,7 +222,7 @@ def main(config_path):
         test_schema_file = data_dir / "test" / "schema.json"
         test_schemas = json.load(open(test_schema_file))
         test_schema_vocab_file = save_dir / "test_schema_vocab.pkl"
-        test_schema_vocab = pickle.load(open(test_schema_vocab_file, 'rb'))
+        test_schema_vocab = pickle.load(open(test_schema_vocab_file, "rb"))
 
         test_dialogues = []
         for f in test_files:
@@ -237,22 +236,21 @@ def main(config_path):
     logger.info(f"[-] Vocab size: {vocab_size}")
     logger.info(f"[-] Full vocab size: {len(vocab._idx2token)}")
     logger.info(f"[*] Dump vocab to {vocab_path}")
-    pickle.dump(vocab, open(vocab_path, 'wb'))
+    pickle.dump(vocab, open(vocab_path, "wb"))
 
     # Generate embeddings
     UNK = vocab.convert_tokens_to_indices(["<UNK>"])[0]
     PAD = vocab.convert_tokens_to_indices(["<PAD>"])[0]
-    with open(config.data.embed_path, 'r') as file:
+    with open(config.data.embed_path, "r") as file:
         line = next(file)
         emb_dim = len(line.strip().split()) - 1
     cover = 0
     weight = torch.zeros(len(vocab), emb_dim)
-    with open(config.data.embed_path, 'r') as file:
+    with open(config.data.embed_path, "r") as file:
         for line in tqdm(
-                file,
-                total=get_num_lines(config.data.embed_path),
-                leave=False):
-            data = line.strip().split(' ')
+            file, total=get_num_lines(config.data.embed_path), leave=False
+        ):
+            data = line.strip().split(" ")
             token, emb = data[0], list(map(float, data[1:]))
             idx = vocab.convert_tokens_to_indices([token])[0]
             if len(emb) == emb_dim and idx != UNK:
@@ -260,44 +258,41 @@ def main(config_path):
                 weight[idx] = torch.FloatTensor(emb)
     weight[UNK] = 0.0
     weight[PAD] = 0.0
-    logger.info((
-        f"[-] Coverage: {cover}/{len(vocab)} "
-        f"({cover / len(vocab) * 100:.2f}%)."))
-    pickle.dump(weight, open(config.model_param.emb.embed_path, 'wb'))
+    logger.info(
+        (f"[-] Coverage: {cover}/{len(vocab)} " f"({cover / len(vocab) * 100:.2f}%).")
+    )
+    pickle.dump(weight, open(config.model_param.emb.embed_path, "wb"))
 
     # Build dataset
-    dataset = build_dataset(
-        train_dialogues, vocab, train_schema_vocab, train_schemas)
+    dataset = build_dataset(train_dialogues, vocab, train_schema_vocab, train_schemas)
     logger.info(f"[-] {len(dataset)} Examples for training")
-    pickle.dump(dataset, open(save_dir / "train.pkl", 'wb'))
-    dataset = build_dataset(
-        valid_dialogues, vocab, valid_schema_vocab, valid_schemas)
+    pickle.dump(dataset, open(save_dir / "train.pkl", "wb"))
+    dataset = build_dataset(valid_dialogues, vocab, valid_schema_vocab, valid_schemas)
     logger.info(f"[-] {len(dataset)} Examples for validating")
-    pickle.dump(dataset, open(save_dir / "valid.pkl", 'wb'))
+    pickle.dump(dataset, open(save_dir / "valid.pkl", "wb"))
     if is_test:
-        dataset = build_dataset(
-            test_dialogues, vocab, test_schema_vocab, test_schemas)
+        dataset = build_dataset(test_dialogues, vocab, test_schema_vocab, test_schemas)
         logger.info(f"[-] {len(dataset)} Examples for testing")
-        pickle.dump(dataset, open(save_dir / "test.pkl", 'wb'))
+        pickle.dump(dataset, open(save_dir / "test.pkl", "wb"))
 
     # Convert schema desc
-    schema_desc = pickle.load(open(save_dir / "train_schema_desc.pkl", 'rb'))
+    schema_desc = pickle.load(open(save_dir / "train_schema_desc.pkl", "rb"))
     schema_desc = [
-        [vocab.convert_tokens_to_indices(sent) for sent in desc]
-        for desc in schema_desc]
-    pickle.dump(schema_desc, open(save_dir / "train_schema_desc.pkl", 'wb'))
-    schema_desc = pickle.load(open(save_dir / "valid_schema_desc.pkl", 'rb'))
+        [vocab.convert_tokens_to_indices(sent) for sent in desc] for desc in schema_desc
+    ]
+    pickle.dump(schema_desc, open(save_dir / "train_schema_desc.pkl", "wb"))
+    schema_desc = pickle.load(open(save_dir / "valid_schema_desc.pkl", "rb"))
     schema_desc = [
-        [vocab.convert_tokens_to_indices(sent) for sent in desc]
-        for desc in schema_desc]
-    pickle.dump(schema_desc, open(save_dir / "valid_schema_desc.pkl", 'wb'))
+        [vocab.convert_tokens_to_indices(sent) for sent in desc] for desc in schema_desc
+    ]
+    pickle.dump(schema_desc, open(save_dir / "valid_schema_desc.pkl", "wb"))
     if is_test:
-        schema_desc = pickle.load(
-            open(save_dir / "test_schema_desc.pkl", 'rb'))
+        schema_desc = pickle.load(open(save_dir / "test_schema_desc.pkl", "rb"))
         schema_desc = [
             [vocab.convert_tokens_to_indices(sent) for sent in desc]
-            for desc in schema_desc]
-        pickle.dump(schema_desc, open(save_dir / "test_schema_desc.pkl", 'wb'))
+            for desc in schema_desc
+        ]
+        pickle.dump(schema_desc, open(save_dir / "test_schema_desc.pkl", "wb"))
 
 
 if __name__ == "__main__":

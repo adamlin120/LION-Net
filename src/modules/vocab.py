@@ -1,22 +1,21 @@
 class Vocab:
     def __init__(self, counter, size):
-        self._special_tokens = [
-            "<PAD>", "<UNK>", "<BOS>", "<EOS>", "<DONTCARE>"]
+        self._special_tokens = ["<PAD>", "<UNK>", "<BOS>", "<EOS>", "<DONTCARE>"]
         self._size = size
-        self._idx2token = [token for token in self._special_tokens] + \
-                          [token for token, _ in counter.most_common()]
-        self._token2idx = {
-            token: idx for idx, token in enumerate(self._idx2token)}
+        self._idx2token = [token for token in self._special_tokens] + [
+            token for token, _ in counter.most_common()
+        ]
+        self._token2idx = {token: idx for idx, token in enumerate(self._idx2token)}
 
     def convert_tokens_to_indices(self, tokens, mode="normal", ext_list=None):
-        if '–' in tokens:
+        if "–" in tokens:
             for idx, token in enumerate(tokens):
-                if '–' == token:
-                    tokens[idx] = '-'
+                if "–" == token:
+                    tokens[idx] = "-"
         indices = [
-            self._token2idx[token]
-            if token in self._token2idx else 1
-            for token in tokens]
+            self._token2idx[token] if token in self._token2idx else 1
+            for token in tokens
+        ]
         if mode == "normal":
             indices = [idx if idx < self._size else 1 for idx in indices]
             return indices
@@ -48,7 +47,8 @@ class Vocab:
         else:
             indices = [
                 idx if idx < self._size else ext_list[idx - self._size]
-                for idx in indices]
+                for idx in indices
+            ]
             tokens = [self._idx2token[idx] for idx in indices]
         return tokens
 

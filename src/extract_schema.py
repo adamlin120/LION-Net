@@ -15,16 +15,20 @@ from transformers import BertTokenizer
 from modules.logger import create_logger
 from modules.utils import create_device
 
-nlp = spacy.load('en')
+nlp = spacy.load("en")
 spacy_tokenizer = spacy.lang.en.English().Defaults().create_tokenizer(nlp)
 
 
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        '-c', '--config', dest='config_path',
-        default='./config.yaml', type=Path,
-        help='the path of config file')
+        "-c",
+        "--config",
+        dest="config_path",
+        default="./config.yaml",
+        type=Path,
+        help="the path of config file",
+    )
     args = parser.parse_args()
     return vars(args)
 
@@ -55,7 +59,7 @@ def extract_words(string):
 
 
 def extract(schema_file, concat_name=False):
-    schemas = json.load(open(schema_file, 'r'))
+    schemas = json.load(open(schema_file, "r"))
     service2idx, idx2service = {}, []
     intent2idx, idx2intent = {}, []
     slot2idx, idx2slot = {}, []
@@ -66,47 +70,64 @@ def extract(schema_file, concat_name=False):
     service_desc, intent_desc, slot_desc = [], [], []
 
     for schema in schemas:
-        service_name = schema['service_name']
+        service_name = schema["service_name"]
         service2idx[service_name] = len(idx2service)
         service2cat[service_name] = []
         idx2service.append(service_name)
         if concat_name:
             _service_name = service_name.replace("_", " ")
-            service_desc.append(
-                _service_name + '. ' + schema['description'])
+            service_desc.append(_service_name + ". " + schema["description"])
         else:
-            service_desc.append(schema['description'])
+            service_desc.append(schema["description"])
 
-        for intent in schema['intents']:
-            intent_name = intent['name']
+        for intent in schema["intents"]:
+            intent_name = intent["name"]
             intent2idx[(service_name, intent_name)] = len(idx2intent)
             idx2intent.append((service_name, intent_name))
             if concat_name:
-                _intent_name = ' '.join(extract_words(intent_name)) if intent_name[0].isupper() else intent_name.strip().replace('_', ' ')
-                intent_desc.append(
-                    _intent_name + '. ' + intent['description'])
+                _intent_name = (
+                    " ".join(extract_words(intent_name))
+                    if intent_name[0].isupper()
+                    else intent_name.strip().replace("_", " ")
+                )
+                intent_desc.append(_intent_name + ". " + intent["description"])
             else:
-                intent_desc.append(intent['description'])
+                intent_desc.append(intent["description"])
         intent2idx[(service_name, "NONE")] = len(idx2intent)
         idx2intent.append((service_name, "NONE"))
         intent_desc.append("")
 
-        for slot in schema['slots']:
-            slot_name = slot['name']
+        for slot in schema["slots"]:
+            slot_name = slot["name"]
             slot2idx[(service_name, slot_name)] = len(idx2slot)
             idx2slot.append((service_name, slot_name))
             if concat_name:
-                _slot_name = slot_name.replace("_", " ").split('-')[-1].replace('book', '').replace('pricerange', 'price range').replace('leaveat', 'leave at').replace('arriveby', 'arrive by')
-                slot_desc.append(_slot_name + '. ' + slot['description'])
+                _slot_name = (
+                    slot_name.replace("_", " ")
+                    .split("-")[-1]
+                    .replace("book", "")
+                    .replace("pricerange", "price range")
+                    .replace("leaveat", "leave at")
+                    .replace("arriveby", "arrive by")
+                )
+                slot_desc.append(_slot_name + ". " + slot["description"])
             else:
-                slot_desc.append(slot['description'])
-            service2cat[service_name].append(slot['is_categorical'])
-            slot2values[len(idx2slot) - 1] = slot.get('possible_values', [])
+                slot_desc.append(slot["description"])
+            service2cat[service_name].append(slot["is_categorical"])
+            slot2values[len(idx2slot) - 1] = slot.get("possible_values", [])
 
     idx2act = [
-        "INFORM", "REQUEST", "CONFIRM", "OFFER",
-        "NOTIFY_SUCCESS", "NOTIFY_FAILURE",
-        "INFORM_COUNT", "OFFER_INTENT", "REQ_MORE", "GOODBYE"]
+        "INFORM",
+        "REQUEST",
+        "CONFIRM",
+        "OFFER",
+        "NOTIFY_SUCCESS",
+        "NOTIFY_FAILURE",
+        "INFORM_COUNT",
+        "OFFER_INTENT",
+        "REQ_MORE",
+        "GOODBYE",
+    ]
     act2idx = {act: idx for idx, act in enumerate(idx2act)}
 
     schema_vocab = [
@@ -115,7 +136,8 @@ def extract(schema_file, concat_name=False):
         [slot2idx, idx2slot],
         [act2idx, idx2act],
         service2cat,
-        slot2values]
+        slot2values,
+    ]
     desc = [service_desc, intent_desc, slot_desc]
     return schema_vocab, desc
 
@@ -124,7 +146,7 @@ def main(config_path):
     config = Box.from_yaml(config_path.open())
     torch.cuda.set_device(config.train.device)
     logger = create_logger(name="MAIN")
-    logger.info(f'[-] Config loaded from {config_path}')
+    logger.info(f"[-] Config loaded from {config_path}")
 
     data_dir = Path(config.data.data_dir)
     save_dir = Path(config.data.save_dir)
@@ -134,14 +156,13 @@ def main(config_path):
     device = create_device(config.train.device)
 
     tokenizer = BertTokenizer.from_pretrained(
-        str(transfo_dir),
-        do_lower_case=(not config.data.cased))
+        str(transfo_dir), do_lower_case=(not config.data.cased)
+    )
 
     global CLS
     global SEP
     global PAD
-    CLS, SEP, PAD = tokenizer.convert_tokens_to_ids(
-        ["[CLS]", "[SEP]", "[PAD]"])
+    CLS, SEP, PAD = tokenizer.convert_tokens_to_ids(["[CLS]", "[SEP]", "[PAD]"])
 
     bert_config = BertConfig.from_pretrained(str(transfo_dir))
     # To extract representations from other layers
@@ -169,20 +190,17 @@ def main(config_path):
         test_embed_file = None
         test_desc_file = None
 
-    train_schema_vocab, train_desc = \
-        extract(train_file, config.data.concat_name)
-    valid_schema_vocab, valid_desc = \
-        extract(valid_file, config.data.concat_name)
+    train_schema_vocab, train_desc = extract(train_file, config.data.concat_name)
+    valid_schema_vocab, valid_desc = extract(valid_file, config.data.concat_name)
     if test_file is not None:
-        test_schema_vocab, test_desc = \
-            extract(test_file, config.data.concat_name)
+        test_schema_vocab, test_desc = extract(test_file, config.data.concat_name)
     else:
         test_schema_vocab = test_desc = None
 
-    pickle.dump(train_schema_vocab, open(train_vocab_file, 'wb'))
-    pickle.dump(valid_schema_vocab, open(valid_vocab_file, 'wb'))
+    pickle.dump(train_schema_vocab, open(train_vocab_file, "wb"))
+    pickle.dump(valid_schema_vocab, open(valid_vocab_file, "wb"))
     if test_schema_vocab is not None:
-        pickle.dump(test_schema_vocab, open(test_vocab_file, 'wb'))
+        pickle.dump(test_schema_vocab, open(test_vocab_file, "wb"))
 
     layer = config.data.schema.layer
     pooling = config.data.schema.pooling
@@ -191,39 +209,33 @@ def main(config_path):
     for desc in tqdm(train_desc, leave=False):
         embed = []
         for sent in tqdm(desc, leave=False):
-            embed.append(
-                get_rep(sent, model, tokenizer, layer, pooling, device))
+            embed.append(get_rep(sent, model, tokenizer, layer, pooling, device))
         embed = torch.stack(embed)
         train_embed.append(embed)
 
     train_desc = [
-        [
-            [word.text.lower() for word in spacy_tokenizer(sent)]
-            for sent in desc
-        ]
-        for desc in train_desc]
+        [[word.text.lower() for word in spacy_tokenizer(sent)] for sent in desc]
+        for desc in train_desc
+    ]
 
-    pickle.dump(train_embed, open(train_embed_file, 'wb'))
-    pickle.dump(train_desc, open(train_desc_file, 'wb'))
+    pickle.dump(train_embed, open(train_embed_file, "wb"))
+    pickle.dump(train_desc, open(train_desc_file, "wb"))
 
     valid_embed = []
     for desc in tqdm(valid_desc, leave=False):
         embed = []
         for sent in tqdm(desc, leave=False):
-            embed.append(
-                get_rep(sent, model, tokenizer, layer, pooling, device))
+            embed.append(get_rep(sent, model, tokenizer, layer, pooling, device))
         embed = torch.stack(embed)
         valid_embed.append(embed)
 
     valid_desc = [
-        [
-            [word.text.lower() for word in spacy_tokenizer(sent)]
-            for sent in desc
-        ]
-        for desc in valid_desc]
+        [[word.text.lower() for word in spacy_tokenizer(sent)] for sent in desc]
+        for desc in valid_desc
+    ]
 
-    pickle.dump(valid_embed, open(valid_embed_file, 'wb'))
-    pickle.dump(valid_desc, open(valid_desc_file, 'wb'))
+    pickle.dump(valid_embed, open(valid_embed_file, "wb"))
+    pickle.dump(valid_desc, open(valid_desc_file, "wb"))
 
     if test_desc is None:
         exit()
@@ -232,20 +244,17 @@ def main(config_path):
     for desc in tqdm(test_desc, leave=False):
         embed = []
         for sent in tqdm(desc, leave=False):
-            embed.append(
-                get_rep(sent, model, tokenizer, layer, pooling, device))
+            embed.append(get_rep(sent, model, tokenizer, layer, pooling, device))
         embed = torch.stack(embed)
         test_embed.append(embed)
 
     test_desc = [
-        [
-            [word.text.lower() for word in spacy_tokenizer(sent)]
-            for sent in desc
-        ]
-        for desc in test_desc]
+        [[word.text.lower() for word in spacy_tokenizer(sent)] for sent in desc]
+        for desc in test_desc
+    ]
 
-    pickle.dump(test_embed, open(test_embed_file, 'wb'))
-    pickle.dump(test_desc, open(test_desc_file, 'wb'))
+    pickle.dump(test_embed, open(test_embed_file, "wb"))
+    pickle.dump(test_desc, open(test_desc_file, "wb"))
 
 
 if __name__ == "__main__":

@@ -22,27 +22,17 @@ def compute_f1(ref, hyp):
 def compute_requested_slots_f1(outputs, labels):
     preds = [nn.Sigmoid()(o).flatten() for o in outputs]
     preds = [(pred >= 0.5).tolist() for pred in preds]
-    preds = [
-        [i for i, p in enumerate(pred) if p]
-        for pred in preds]
-    labels = [
-        (label >= 0.5).flatten().tolist()
-        for label in labels]
-    labels = [
-        [i for i, l in enumerate(label) if l]
-        for label in labels]
-    f1_scores = [
-        compute_f1(label, pred)[0] for pred, label in
-        zip(labels, preds)]
+    preds = [[i for i, p in enumerate(pred) if p] for pred in preds]
+    labels = [(label >= 0.5).flatten().tolist() for label in labels]
+    labels = [[i for i, l in enumerate(label) if l] for label in labels]
+    f1_scores = [compute_f1(label, pred)[0] for pred, label in zip(labels, preds)]
     return f1_scores
 
 
 def compute_active_intent_acc(outputs, labels):
     preds = [torch.argmax(o).item() for o in outputs]
     labels = [label.item() for label in labels]
-    act_acc = [
-        pred == label for pred, label in
-        zip(preds, labels)]
+    act_acc = [pred == label for pred, label in zip(preds, labels)]
     return act_acc
 
 
@@ -57,9 +47,7 @@ def compute_slot_filling_acc(preds, labels, tags):
                 if tag:
                     acc = float(label[0] == pred[0])
                 else:
-                    acc = max([
-                        fuzz.token_sort_ratio(l, pred[0]) / 100
-                        for l in label])
+                    acc = max([fuzz.token_sort_ratio(l, pred[0]) / 100 for l in label])
                 value_accs.append(acc)
         else:
             active_flags.append(False)
