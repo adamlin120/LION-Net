@@ -121,6 +121,8 @@ def build_dataset(dialogues, vocab, schema_vocab, schemas):
                         example['requested_slots'] = requested_slots
                         # get active intent
                         intent_name = frame['state']['active_intent']
+                        if (service_name, intent_name) not in intent2idx:
+                            intent_name = "NONE"
                         intent_idx = intent2idx[(service_name, intent_name)]
                         active_intent = \
                             example['intent_list'].index(intent_idx)
@@ -157,29 +159,20 @@ def main(config_path):
     data_dir = Path(config.data.data_dir)
     save_dir = Path(config.data.save_dir)
 
-    sd_train_files = [
-        data_dir / "train" / f"dialogues_{idx:0>3}.json"
-        for idx in range(1, 44)]
-    md_train_files = [
-        data_dir / "train" / f"dialogues_{idx:0>3}.json"
-        for idx in range(44, 128)]
+    train_dir = data_dir / 'train'
+    sd_train_files = list(train_dir.glob('dialogues_*.json'))
+    md_train_files = []
 
-    sd_valid_files = [
-        data_dir / "dev" / f"dialogues_{idx:0>3}.json"
-        for idx in range(1, 8)]
-    md_valid_files = [
-        data_dir / "dev" / f"dialogues_{idx:0>3}.json"
-        for idx in range(8, 21)]
+    valid_dir = data_dir / 'dev'
+    sd_valid_files = list(valid_dir.glob('dialogues_*.json'))
+    md_valid_files = []
 
     is_test = (data_dir / "test").exists()
     # Wait for test data release
     if is_test:
-        sd_test_files = [
-            data_dir / "test" / f"dialogues_{idx:0>3}.json"
-            for idx in range(1, 8)]
-        md_test_files = [
-            data_dir / "test" / f"dialogues_{idx:0>3}.json"
-            for idx in range(8, 21)]
+        test_dir = data_dir / 'test'
+        sd_test_files = list(test_dir.glob('dialogues_*.json'))
+        md_test_files = []
 
     train_files, valid_files, test_files = [], [], []
 

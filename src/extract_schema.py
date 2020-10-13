@@ -82,7 +82,7 @@ def extract(schema_file, concat_name=False):
             intent2idx[(service_name, intent_name)] = len(idx2intent)
             idx2intent.append((service_name, intent_name))
             if concat_name:
-                _intent_name = ' '.join(extract_words(intent_name))
+                _intent_name = ' '.join(extract_words(intent_name)) if intent_name[0].isupper() else intent_name.strip().replace('_', ' ')
                 intent_desc.append(
                     _intent_name + '. ' + intent['description'])
             else:
@@ -96,12 +96,12 @@ def extract(schema_file, concat_name=False):
             slot2idx[(service_name, slot_name)] = len(idx2slot)
             idx2slot.append((service_name, slot_name))
             if concat_name:
-                _slot_name = slot_name.replace("_", " ")
+                _slot_name = slot_name.replace("_", " ").split('-')[-1].replace('book', '').replace('pricerange', 'price range').replace('leaveat', 'leave at').replace('arriveby', 'arrive by')
                 slot_desc.append(_slot_name + '. ' + slot['description'])
             else:
                 slot_desc.append(slot['description'])
             service2cat[service_name].append(slot['is_categorical'])
-            slot2values[len(idx2slot) - 1] = slot['possible_values']
+            slot2values[len(idx2slot) - 1] = slot.get('possible_values', [])
 
     idx2act = [
         "INFORM", "REQUEST", "CONFIRM", "OFFER",
@@ -150,7 +150,7 @@ def main(config_path):
     model.to(device)
     model.eval()
 
-    train_file = data_dir / "train" / "schema.json"
+    train_file = data_dir / "schema_dstc8+m2.2.json"
     train_vocab_file = save_dir / "train_schema_vocab.pkl"
     train_embed_file = save_dir / "train_schema_embed.pkl"
     train_desc_file = save_dir / "train_schema_desc.pkl"
