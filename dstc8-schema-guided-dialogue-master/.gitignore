@@ -1,0 +1,11 @@
+# misc in dstc8 sgd dataset folder
+*.ckpt
+dstc8.md
+LICENSE.txt
+schema_guided_overview.png
+README.md
+output_metric_file.json
+
+dialogues_*.json
+schema.json
+schema_dstc8+m2.2.json
