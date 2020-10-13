@@ -22,11 +22,15 @@ from __future__ import print_function
 import collections
 import json
 import os
+import re
+import csv
 
 import metrics
 import numpy as np
 import tensorflow as tf
+import tensorboard as tb
 
+tf.io.gfile = tb.compat.tensorflow_stub.io.gfile
 flags = tf.flags
 FLAGS = flags.FLAGS
 
@@ -121,6 +125,16 @@ def get_metrics(dataset_ref, dataset_hyp, service_schemas, in_domain_services):
     tf.logging.info("len(dataset_hyp)=%d, len(dataset_ref)=%d", len(dataset_hyp),
                     len(dataset_ref))
 
+    slot_acc = {}
+    # initialization of slot_acc dict
+    for service_name, schema in service_schemas.items():
+        for slot in schema["slots"]:
+            slot_name = slot["name"]
+            slot_acc[slot_name + "_TP"] = 0
+            slot_acc[slot_name + "_TN"] = 0
+            slot_acc[slot_name + "_FP"] = 0
+            slot_acc[slot_name + "_FN"] = 0
+
     # Store metrics for every frame for debugging.
     per_frame_metric = {}
     for dial_id, dial_hyp in dataset_hyp.items():
@@ -167,8 +181,8 @@ def get_metrics(dataset_ref, dataset_hyp, service_schemas, in_domain_services):
                     frame_ref, frame_hyp, turn_ref["utterance"], service)
                 requested_slots_f1_scores = metrics.get_requested_slots_f1(
                     frame_ref, frame_hyp)
-                goal_accuracy_dict = metrics.get_average_and_joint_goal_accuracy(
-                    frame_ref, frame_hyp, service)
+                goal_accuracy_dict, slot_acc = metrics.get_average_and_joint_goal_accuracy(
+                    frame_ref, frame_hyp, service, slot_acc)
 
                 frame_metric = {
                     metrics.ACTIVE_INTENT_ACCURACY:
@@ -214,7 +228,27 @@ def get_metrics(dataset_ref, dataset_hyp, service_schemas, in_domain_services):
             else:
                 domain_metric_aggregate[metric_key] = metrics.NAN_VAL
         all_metric_aggregate[domain_key] = domain_metric_aggregate
-    return all_metric_aggregate, per_frame_metric
+
+    slot_acc_dict = {}
+    for service_name, schema in service_schemas.items():
+        for slot in schema["slots"]:
+            slot_name = slot["name"]
+            TP = slot_acc[slot_name + "_TP"]
+            TN = slot_acc[slot_name + "_TN"]
+            FP = slot_acc[slot_name + "_FP"]
+            FN = slot_acc[slot_name + "_FN"]
+            if (TP + FP) == 0 or (TP + FN) == 0 or TP == 0:
+                precision = 0
+                recall = 0
+                f1 = 0
+            else:
+                precision = TP / (TP + FP)
+                recall = TP / (TP + FN)
+                f1 = 2 * precision * recall / (precision + recall)
+            slot_acc_dict[slot_name + "_precision"] = precision
+            slot_acc_dict[slot_name + "_recall"] = recall
+            slot_acc_dict[slot_name + "_f1"] = f1
+    return all_metric_aggregate, per_frame_metric, slot_acc_dict
 
 
 def main(_):
@@ -224,7 +258,7 @@ def main(_):
         os.path.join(FLAGS.dstc8_data_dir, FLAGS.eval_set, "schema.json"),
         os.path.join(FLAGS.dstc8_data_dir, "train", "schema.json"))
     with tf.io.gfile.GFile(
-            os.path.join(FLAGS.dstc8_data_dir, FLAGS.eval_set, "schema.json")) as f:
+            os.path.join(FLAGS.dstc8_data_dir, FLAGS.eval_set, "schema.json"), 'r') as f:
         eval_services = {}
         list_services = json.load(f)
         for service in list_services:
@@ -235,9 +269,10 @@ def main(_):
     dataset_hyp = get_dataset_as_dict(
         os.path.join(FLAGS.prediction_dir, "*.json"))
 
-    all_metric_aggregate, _ = get_metrics(
+    all_metric_aggregate, _, slot_acc_dict = get_metrics(
         dataset_ref, dataset_hyp, eval_services, in_domain_services)
     tf.logging.info("Dialog metrics: %s", str(all_metric_aggregate[ALL_SERVICES]))
+    tf.logging.info("Slots metrics: %s", slot_acc_dict)
 
     # Write the aggregated metrics values.
     with tf.gfile.GFile(FLAGS.output_metric_file, "w") as f:
@@ -247,6 +282,15 @@ def main(_):
     with tf.gfile.GFile(os.path.join(FLAGS.prediction_dir,
                                      PER_FRAME_OUTPUT_FILENAME), "w") as f:
         json.dump(dataset_hyp, f, indent=2, separators=(",", ": "))
+    # Write the aggregated metrics values.
+    with tf.gfile.GFile(FLAGS.output_metric_file+'.slots', "w") as f:
+        json.dump(slot_acc_dict, f, indent=2, separators=(",", ": "),
+                  sort_keys=True)
+
+    table = [['domain', 'slot_name', 'metric', 'value']] + [[*re.split(r'_|-', k), v] for k, v in slot_acc_dict.items()]
+    with open(FLAGS.output_metric_file+'.slots.csv', 'w', newline='') as csvfile:
+        writer = csv.writer(csvfile)
+        writer.writerows(table)
 
 
 if __name__ == "__main__":

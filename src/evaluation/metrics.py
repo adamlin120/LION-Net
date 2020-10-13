@@ -122,7 +122,7 @@ def noncat_slot_value_match(str_ref_list, str_hyp):
     return score
 
 
-def compare_slot_values(slot_values_ref, slot_values_hyp, service):
+def compare_slot_values(slot_values_ref, slot_values_hyp, service, slot_acc):
     """Compare and get correctness of goal state's slot_values.
 
     Args:
@@ -154,25 +154,44 @@ def compare_slot_values(slot_values_ref, slot_values_hyp, service):
             if slot_name in slot_values_hyp:  # HYP=active, apply matching
                 value_ref_list = slot_values_ref[slot_name]
                 value_hyp = slot_values_hyp[slot_name][0]
-                if slot["is_categorical"]:
-                    cor = float(value_ref_list[0] == value_hyp)
-                else:
-                    cor = noncat_slot_value_match(value_ref_list, value_hyp)
+                if slot["is_categorical"]:  # if the slot is categorical
+                    cor = float(value_ref_list[0] == value_hyp)  # 有中就是100分
+                    if cor == 1:
+                        slot_acc[slot_name + "_TP"] += 1
+                    else:  # if we predicted wrong in categorical slot it's false positive
+                        slot_acc[slot_name + "_FP"] += 1
+                else:  # if the slot is non-categorical
+                    cor = noncat_slot_value_match(
+                        value_ref_list, value_hyp
+                    )  # 要看有多少比例符合
+                    if cor >= 0.5:
+                        slot_acc[slot_name + "_TP"] += 1
+                    else:
+                        slot_acc[slot_name + "_FP"] += 1
 
                 list_cor.append(cor)
-            else:  # HYP=off
+            else:  # HYP=off #ground truth有可是predict沒有  0分
                 list_cor.append(0.0)
+                slot_acc[slot_name + "_FN"] += 1
         else:  # REF=off
             slot_active.append(False)
-            if slot_name in slot_values_hyp:  # HYP=active
+            if slot_name in slot_values_hyp:  # HYP=active #ground truth沒有 predict有 也是0分
                 list_cor.append(0.0)
-            else:  # HYP=off
+                slot_acc[slot_name + "_FP"] += 1
+            else:  # HYP=off, ground truth沒有 predict也沒有 100分
                 list_cor.append(1.0)
+                slot_acc[slot_name + "_TN"] += 1
 
+    # print("list_cor: ", list_cor)
+    # print("slot_active: ", slot_active)
+    # print("slot_cat: ", slot_cat)
+    # print("slot_acc: ", slot_acc)
+    # input()
     assert len(list_cor) == len(service["slots"])
     assert len(slot_active) == len(service["slots"])
     assert len(slot_cat) == len(service["slots"])
-    return list_cor, slot_active, slot_cat
+    # assert len(slot_acc) == len(service["slots"])
+    return list_cor, slot_active, slot_cat, slot_acc
 
 
 def get_active_intent_accuracy(frame_ref, frame_hyp):
@@ -210,10 +229,10 @@ def get_slot_tagging_f1(frame_ref, frame_hyp, utt, service):
     if "slots" not in frame_hyp:
         return None
     else:
-        list_ref = [(s["slot"], utt[s["start"]:s["exclusive_end"]])
+        list_ref = [(s["slot"], s["value"] if isinstance(s["value"], str) else s["value"][0])
                     for s in frame_ref["slots"]
                     if s["slot"] in list_noncat_slots]
-        list_hyp = [(s["slot"], utt[s["start"]:s["exclusive_end"]])
+        list_hyp = [(s["slot"], s["value"] if isinstance(s["value"], str) else s["value"][0])
                     for s in frame_hyp["slots"]
                     if s["slot"] in list_noncat_slots]
         return compute_f1(list_ref, list_hyp)
@@ -233,7 +252,8 @@ def get_requested_slots_f1(frame_ref, frame_hyp):
                       frame_hyp["state"]["requested_slots"])
 
 
-def get_average_and_joint_goal_accuracy(frame_ref, frame_hyp, service):
+
+def get_average_and_joint_goal_accuracy(frame_ref, frame_hyp, service, slot_acc):
     """Get average and joint goal accuracies of a frame.
 
     Args:
@@ -248,28 +268,32 @@ def get_average_and_joint_goal_accuracy(frame_ref, frame_hyp, service):
     """
     goal_acc = {}
 
-    list_acc, slot_active, slot_cat = compare_slot_values(
+    list_acc, slot_active, slot_cat, slot_acc = compare_slot_values(
         frame_ref["state"]["slot_values"], frame_hyp["state"]["slot_values"],
-        service)
+        service, slot_acc)
 
     # (4) Average goal accuracy.
     active_acc = [acc for acc, active in zip(list_acc, slot_active) if active]
-    goal_acc[AVERAGE_GOAL_ACCURACY] = np.mean(
-        active_acc) if active_acc else NAN_VAL
+    # print("active_acc: ", active_acc)
+    goal_acc[AVERAGE_GOAL_ACCURACY] = np.mean(active_acc) if active_acc else NAN_VAL
     # (4-a) categorical.
     active_cat_acc = [
-        acc for acc, active, cat in zip(list_acc, slot_active, slot_cat)
+        acc
+        for acc, active, cat in zip(list_acc, slot_active, slot_cat)
         if active and cat
     ]
     goal_acc[AVERAGE_CAT_ACCURACY] = (
-        np.mean(active_cat_acc) if active_cat_acc else NAN_VAL)
+        np.mean(active_cat_acc) if active_cat_acc else NAN_VAL
+    )
     # (4-b) non-categorical.
     active_noncat_acc = [
-        acc for acc, active, cat in zip(list_acc, slot_active, slot_cat)
+        acc
+        for acc, active, cat in zip(list_acc, slot_active, slot_cat)
         if active and not cat
     ]
     goal_acc[AVERAGE_NONCAT_ACCURACY] = (
-        np.mean(active_noncat_acc) if active_noncat_acc else NAN_VAL)
+        np.mean(active_noncat_acc) if active_noncat_acc else NAN_VAL
+    )
 
     # (5) Joint goal accuracy.
     goal_acc[JOINT_GOAL_ACCURACY] = np.prod(list_acc) if list_acc else NAN_VAL
@@ -278,7 +302,6 @@ def get_average_and_joint_goal_accuracy(frame_ref, frame_hyp, service):
     goal_acc[JOINT_CAT_ACCURACY] = np.prod(cat_acc) if cat_acc else NAN_VAL
     # (5-b) non-categorical.
     noncat_acc = [acc for acc, cat in zip(list_acc, slot_cat) if not cat]
-    goal_acc[JOINT_NONCAT_ACCURACY] = np.prod(
-        noncat_acc) if noncat_acc else NAN_VAL
+    goal_acc[JOINT_NONCAT_ACCURACY] = np.prod(noncat_acc) if noncat_acc else NAN_VAL
 
-    return goal_acc
+    return goal_acc, slot_acc
