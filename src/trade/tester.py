@@ -193,34 +193,56 @@ class Tester:
                 for pidx, p in enumerate(pred):
                     if len(p) == 0:
                         continue
-                    if flag:
+                    if flag:  # if it's categorical
                         try:
                             words = self.tokenizer(p)
                             embs = [
-                                self.emb[word.text]
-                                for word in words
-                                if word in self.emb
-                            ]
+                                self.emb[word.text] for word in words
+                                if word.text in self.emb]
                             embs = np.mean(embs, axis=0)
                             val_emb = []
                             for v in values:
-                                val_emb.append(
-                                    np.mean(
-                                        [
-                                            self.emb[word.text]
-                                            for word in self.tokenizer(v)
-                                            if word in self.emb
-                                        ],
-                                        axis=0,
-                                    )
-                                )
-                            final_preds[sidx].append(
-                                values[
-                                    self.get_most_likely(embs, val_emb, self.similarity)
-                                ]
-                            )
+                                val_embs = np.mean([
+                                    self.emb[word.text]
+                                    for word in
+                                    self.tokenizer(v)
+                                    if word.text in self.emb],  # you must add word.text!
+                                    axis=0)
+                                if np.isnan(val_embs).all():
+                                    val_embs = np.full((300,), np.inf)
+                                val_emb.append(val_embs)
+                            final_preds[sidx].append(values[
+                                                         self.get_most_likely(
+                                                             embs, val_emb, self.similarity)])
                         except IndexError:
                             pass
+                    # if flag:
+                    #     try:
+                    #         words = self.tokenizer(p)
+                    #         embs = [
+                    #             self.emb[word.text]
+                    #             for word in words
+                    #             if word in self.emb
+                    #         ]
+                    #         embs = np.mean(embs, axis=0)
+                    #         val_emb = []
+                    #         for v in values:
+                    #             val_emb.append(
+                    #                 np.mean(
+                    #                     [
+                    #                         self.emb[word.text]
+                    #                         for word in self.tokenizer(v)
+                    #                         if word in self.emb
+                    #                     ],
+                    #                     axis=0,
+                    #                 )
+                    #             )
+                    #         new_p = values[
+                    #             self.get_most_likely(embs, val_emb, self.similarity)
+                    #         ]
+                    #         final_preds[sidx].append(new_p)
+                    #     except IndexError:
+                    #         pass
                     elif False and self.fix_syntax:
                         for mark in self.trim_front:
                             try:
