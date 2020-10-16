@@ -72,6 +72,58 @@ JOINT_NONCAT_ACCURACY = "joint_noncat_accuracy"
 
 NAN_VAL = "NA"
 
+MULTIWOZ_MAPPING_SLOT_NAMES = {
+    "attraction-name",
+    "attraction-type",
+    "hotel-name",
+    "hotel-bookpeople",
+    "hotel-stars",
+    "hotel-bookstay",
+    "restaurant-food",
+    "restaurant-name",
+    "restaurant-bookpeople",
+    "restaurant-pricerange",
+    "restaurant-booktime",
+    "taxi-destination",
+    "train-departure",
+    "train-destination",
+    "train-bookpeople"
+}
+
+MULTIWOZ_TRACKABLE_SLOT_NAMES = {
+    "attraction-name",
+    "attraction-area",
+    "attraction-type",
+    "hotel-name",
+    "hotel-bookpeople",
+    "hotel-bookday",
+    "hotel-stars",
+    "hotel-bookstay",
+    "hotel-area",
+    "hotel-type",
+    "hotel-internet",
+    "hotel-parking",
+    "hotel-pricerange",
+    "restaurant-food",
+    "restaurant-name",
+    "restaurant-bookpeople",
+    "restaurant-pricerange",
+    "restaurant-area",
+    "restaurant-bookday",
+    "restaurant-booktime",
+    "taxi-destination",
+    "taxi-departure",
+    "taxi-arriveby",
+    "taxi-leaveat",
+    "train-departure",
+    "train-destination",
+    "train-day",
+    "train-bookpeople",
+    "train-arriveby",
+    "train-leaveat",
+}
+
+
 
 def compute_f1(list_ref, list_hyp):
     """Compute F1 score from reference (grouth truth) list and hypothesis list.
@@ -144,26 +196,29 @@ def compare_slot_values(slot_values_ref, slot_values_hyp, service, slot_acc):
     list_cor = []
     slot_active = []
     slot_cat = []
+    slot_map = []
 
     for slot in service["slots"]:
         slot_name = slot["name"]
+        if slot_name not in MULTIWOZ_TRACKABLE_SLOT_NAMES:
+            continue
         slot_cat.append(slot["is_categorical"])
+        slot_map.append(slot_name in MULTIWOZ_MAPPING_SLOT_NAMES)
 
         if slot_name in slot_values_ref:  # REF=active
             slot_active.append(True)
             if slot_name in slot_values_hyp:  # HYP=active, apply matching
                 value_ref_list = slot_values_ref[slot_name]
-                value_hyp = slot_values_hyp[slot_name][0]
+                value_hyp_list = slot_values_hyp[slot_name]
                 if slot["is_categorical"]:  # if the slot is categorical
-                    cor = float(value_ref_list[0] == value_hyp)  # 有中就是100分
+                    # cor = float(value_ref_list[0] == value_hyp)  # 有中就是100分
+                    cor = float(any(gt in value_hyp_list for gt in value_ref_list))
                     if cor == 1:
                         slot_acc[slot_name + "_TP"] += 1
                     else:  # if we predicted wrong in categorical slot it's false positive
                         slot_acc[slot_name + "_FP"] += 1
                 else:  # if the slot is non-categorical
-                    cor = noncat_slot_value_match(
-                        value_ref_list, value_hyp
-                    )  # 要看有多少比例符合
+                    cor = max(noncat_slot_value_match(value_ref_list, value_hyp) for value_hyp in value_hyp_list)  # 要看有多少比例符合
                     if cor >= 0.5:
                         slot_acc[slot_name + "_TP"] += 1
                     else:
@@ -182,16 +237,11 @@ def compare_slot_values(slot_values_ref, slot_values_hyp, service, slot_acc):
                 list_cor.append(1.0)
                 slot_acc[slot_name + "_TN"] += 1
 
-    # print("list_cor: ", list_cor)
-    # print("slot_active: ", slot_active)
-    # print("slot_cat: ", slot_cat)
-    # print("slot_acc: ", slot_acc)
-    # input()
-    assert len(list_cor) == len(service["slots"])
-    assert len(slot_active) == len(service["slots"])
-    assert len(slot_cat) == len(service["slots"])
-    # assert len(slot_acc) == len(service["slots"])
-    return list_cor, slot_active, slot_cat, slot_acc
+    # assert len(list_cor) == len(service["slots"])
+    # assert len(slot_active) == len(service["slots"])
+    # assert len(slot_cat) == len(service["slots"])
+    # assert len(slot_map) == len(service["slots"])
+    return list_cor, slot_active, slot_cat, slot_acc, slot_map
 
 
 def get_active_intent_accuracy(frame_ref, frame_hyp):
@@ -271,16 +321,28 @@ def get_average_and_joint_goal_accuracy(frame_ref, frame_hyp, service, slot_acc)
     """
     goal_acc = {}
 
-    list_acc, slot_active, slot_cat, slot_acc = compare_slot_values(
+    list_acc, slot_active, slot_cat, slot_acc, slot_map = compare_slot_values(
         frame_ref["state"]["slot_values"],
         frame_hyp["state"]["slot_values"],
         service,
         slot_acc,
     )
 
+    active_acc = [acc for acc, active, map in zip(list_acc, slot_active, slot_map) if active and map]
+    goal_acc["average_map_goal_accuracy"] = np.mean(active_acc) if active_acc else NAN_VAL
+    active_acc = [acc for acc, active, map, cat in zip(list_acc, slot_active, slot_map, slot_cat) if active and map and cat]
+    goal_acc["average_map_cat_goal_accuracy"] = np.mean(active_acc) if active_acc else NAN_VAL
+    active_acc = [acc for acc, active, map, cat in zip(list_acc, slot_active, slot_map, slot_cat) if active and map and not cat]
+    goal_acc["average_map_noncat_goal_accuracy"] = np.mean(active_acc) if active_acc else NAN_VAL
+    active_acc = [acc for acc, active, map in zip(list_acc, slot_active, slot_map) if active and not map]
+    goal_acc["average_nonmap_goal_accuracy"] = np.mean(active_acc) if active_acc else NAN_VAL
+    active_acc = [acc for acc, active, map, cat in zip(list_acc, slot_active, slot_map, slot_cat) if active and not map and cat]
+    goal_acc["average_nonmap_cat_goal_accuracy"] = np.mean(active_acc) if active_acc else NAN_VAL
+    active_acc = [acc for acc, active, map, cat in zip(list_acc, slot_active, slot_map, slot_cat) if active and not map and not cat]
+    goal_acc["average_nonmap_noncat_goal_accuracy"] = np.mean(active_acc) if active_acc else NAN_VAL
+
     # (4) Average goal accuracy.
     active_acc = [acc for acc, active in zip(list_acc, slot_active) if active]
-    # print("active_acc: ", active_acc)
     goal_acc[AVERAGE_GOAL_ACCURACY] = np.mean(active_acc) if active_acc else NAN_VAL
     # (4-a) categorical.
     active_cat_acc = [

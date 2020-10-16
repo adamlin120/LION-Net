@@ -24,11 +24,14 @@ import csv
 import json
 import os
 import re
+from pprint import pprint
 
-import metrics
 import numpy as np
 import tensorboard as tb
 import tensorflow as tf
+
+import metrics
+from metrics import MULTIWOZ_TRACKABLE_SLOT_NAMES
 
 tf.io.gfile = tb.compat.tensorflow_stub.io.gfile
 flags = tf.flags
@@ -137,6 +140,8 @@ def get_metrics(dataset_ref, dataset_hyp, service_schemas, in_domain_services):
     for service_name, schema in service_schemas.items():
         for slot in schema["slots"]:
             slot_name = slot["name"]
+            if slot_name not in MULTIWOZ_TRACKABLE_SLOT_NAMES:
+                continue
             slot_acc[slot_name + "_TP"] = 0
             slot_acc[slot_name + "_TN"] = 0
             slot_acc[slot_name + "_FP"] = 0
@@ -254,6 +259,8 @@ def get_metrics(dataset_ref, dataset_hyp, service_schemas, in_domain_services):
     for service_name, schema in service_schemas.items():
         for slot in schema["slots"]:
             slot_name = slot["name"]
+            if slot_name not in MULTIWOZ_TRACKABLE_SLOT_NAMES:
+                continue
             TP = slot_acc[slot_name + "_TP"]
             TN = slot_acc[slot_name + "_TN"]
             FP = slot_acc[slot_name + "_FP"]
@@ -262,13 +269,16 @@ def get_metrics(dataset_ref, dataset_hyp, service_schemas, in_domain_services):
                 precision = 0
                 recall = 0
                 f1 = 0
+                acc = 0
             else:
                 precision = TP / (TP + FP)
                 recall = TP / (TP + FN)
                 f1 = 2 * precision * recall / (precision + recall)
+                acc = (TP + TN) / (TP + TN + FP + FN)
             slot_acc_dict[slot_name + "_precision"] = precision
             slot_acc_dict[slot_name + "_recall"] = recall
             slot_acc_dict[slot_name + "_f1"] = f1
+            slot_acc_dict[slot_name + "_acc"] = acc
     return all_metric_aggregate, per_frame_metric, slot_acc_dict
 
 
@@ -295,8 +305,8 @@ def main(_):
     all_metric_aggregate, _, slot_acc_dict = get_metrics(
         dataset_ref, dataset_hyp, eval_services, in_domain_services
     )
-    tf.logging.info("Dialog metrics: %s", str(all_metric_aggregate[ALL_SERVICES]))
-    tf.logging.info("Slots metrics: %s", slot_acc_dict)
+    pprint(all_metric_aggregate[ALL_SERVICES])
+    pprint(slot_acc_dict)
 
     # Write the aggregated metrics values.
     with tf.gfile.GFile(FLAGS.output_metric_file, "w") as f:
