@@ -197,23 +197,29 @@ class Tester:
                         try:
                             words = self.tokenizer(p)
                             embs = [
-                                self.emb[word.text] for word in words
-                                if word.text in self.emb]
+                                self.emb[word.text]
+                                for word in words
+                                if word.text in self.emb
+                            ]
                             embs = np.mean(embs, axis=0)
                             val_emb = []
                             for v in values:
-                                val_embs = np.mean([
-                                    self.emb[word.text]
-                                    for word in
-                                    self.tokenizer(v)
-                                    if word.text in self.emb],  # you must add word.text!
-                                    axis=0)
+                                val_embs = np.mean(
+                                    [
+                                        self.emb[word.text]
+                                        for word in self.tokenizer(v)
+                                        if word.text in self.emb
+                                    ],  # you must add word.text!
+                                    axis=0,
+                                )
                                 if np.isnan(val_embs).all():
                                     val_embs = np.full((300,), np.inf)
                                 val_emb.append(val_embs)
-                            final_preds[sidx].append(values[
-                                                         self.get_most_likely(
-                                                             embs, val_emb, self.similarity)])
+                            final_preds[sidx].append(
+                                values[
+                                    self.get_most_likely(embs, val_emb, self.similarity)
+                                ]
+                            )
                         except IndexError:
                             pass
                     # if flag:

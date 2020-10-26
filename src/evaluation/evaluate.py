@@ -31,7 +31,11 @@ import tensorboard as tb
 import tensorflow as tf
 
 import metrics
-from metrics import MULTIWOZ_TRACKABLE_SLOT_NAMES
+from metrics import MULTIWOZ_TRACKABLE_SLOT_NAMES, MULTIWOZ_MAPPING_SLOT_NAMES
+
+MULTIWOZ_NONMAPPING_SLOT_NAMES = (
+    MULTIWOZ_TRACKABLE_SLOT_NAMES - MULTIWOZ_MAPPING_SLOT_NAMES
+)
 
 tf.io.gfile = tb.compat.tensorflow_stub.io.gfile
 flags = tf.flags
@@ -279,7 +283,28 @@ def get_metrics(dataset_ref, dataset_hyp, service_schemas, in_domain_services):
             slot_acc_dict[slot_name + "_recall"] = recall
             slot_acc_dict[slot_name + "_f1"] = f1
             slot_acc_dict[slot_name + "_acc"] = acc
-    return all_metric_aggregate, per_frame_metric, slot_acc_dict
+    sum = {
+        "avg f1": np.mean(
+            [
+                slot_acc_dict[slot_name + "_f1"]
+                for slot_name in MULTIWOZ_TRACKABLE_SLOT_NAMES
+            ]
+        ),
+        "avg map f1": np.mean(
+            [
+                slot_acc_dict[slot_name + "_f1"]
+                for slot_name in MULTIWOZ_MAPPING_SLOT_NAMES
+            ]
+        ),
+        "avg nonmap f1": np.mean(
+            [
+                slot_acc_dict[slot_name + "_f1"]
+                for slot_name in MULTIWOZ_NONMAPPING_SLOT_NAMES
+            ]
+        ),
+    }
+
+    return all_metric_aggregate, per_frame_metric, slot_acc_dict, sum
 
 
 def main(_):
@@ -302,11 +327,12 @@ def main(_):
     )
     dataset_hyp = get_dataset_as_dict(os.path.join(FLAGS.prediction_dir, "*.json"))
 
-    all_metric_aggregate, _, slot_acc_dict = get_metrics(
+    all_metric_aggregate, _, slot_acc_dict, sum = get_metrics(
         dataset_ref, dataset_hyp, eval_services, in_domain_services
     )
-    pprint(all_metric_aggregate[ALL_SERVICES])
     pprint(slot_acc_dict)
+    pprint(all_metric_aggregate[ALL_SERVICES])
+    pprint(sum)
 
     # Write the aggregated metrics values.
     with tf.gfile.GFile(FLAGS.output_metric_file, "w") as f:

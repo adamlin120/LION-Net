@@ -87,7 +87,7 @@ MULTIWOZ_MAPPING_SLOT_NAMES = {
     "taxi-destination",
     "train-departure",
     "train-destination",
-    "train-bookpeople"
+    "train-bookpeople",
 }
 
 MULTIWOZ_TRACKABLE_SLOT_NAMES = {
@@ -122,7 +122,6 @@ MULTIWOZ_TRACKABLE_SLOT_NAMES = {
     "train-arriveby",
     "train-leaveat",
 }
-
 
 
 def compute_f1(list_ref, list_hyp):
@@ -210,15 +209,17 @@ def compare_slot_values(slot_values_ref, slot_values_hyp, service, slot_acc):
             if slot_name in slot_values_hyp:  # HYP=active, apply matching
                 value_ref_list = slot_values_ref[slot_name]
                 value_hyp_list = slot_values_hyp[slot_name]
+                value_hyp = value_hyp_list[0]
                 if slot["is_categorical"]:  # if the slot is categorical
-                    # cor = float(value_ref_list[0] == value_hyp)  # 有中就是100分
-                    cor = float(any(gt in value_hyp_list for gt in value_ref_list))
+                    cor = float(value_ref_list[0] == value_hyp)  # 有中就是100分
+                    # cor = float(any(gt in value_hyp_list for gt in value_ref_list))
                     if cor == 1:
                         slot_acc[slot_name + "_TP"] += 1
                     else:  # if we predicted wrong in categorical slot it's false positive
                         slot_acc[slot_name + "_FP"] += 1
                 else:  # if the slot is non-categorical
-                    cor = max(noncat_slot_value_match(value_ref_list, value_hyp) for value_hyp in value_hyp_list)  # 要看有多少比例符合
+                    # cor = max(noncat_slot_value_match(value_ref_list, value_hyp) for value_hyp in value_hyp_list)  # 要看有多少比例符合
+                    cor = noncat_slot_value_match(value_ref_list, value_hyp)
                     if cor >= 0.5:
                         slot_acc[slot_name + "_TP"] += 1
                     else:
@@ -328,18 +329,54 @@ def get_average_and_joint_goal_accuracy(frame_ref, frame_hyp, service, slot_acc)
         slot_acc,
     )
 
-    active_acc = [acc for acc, active, map in zip(list_acc, slot_active, slot_map) if active and map]
-    goal_acc["average_map_goal_accuracy"] = np.mean(active_acc) if active_acc else NAN_VAL
-    active_acc = [acc for acc, active, map, cat in zip(list_acc, slot_active, slot_map, slot_cat) if active and map and cat]
-    goal_acc["average_map_cat_goal_accuracy"] = np.mean(active_acc) if active_acc else NAN_VAL
-    active_acc = [acc for acc, active, map, cat in zip(list_acc, slot_active, slot_map, slot_cat) if active and map and not cat]
-    goal_acc["average_map_noncat_goal_accuracy"] = np.mean(active_acc) if active_acc else NAN_VAL
-    active_acc = [acc for acc, active, map in zip(list_acc, slot_active, slot_map) if active and not map]
-    goal_acc["average_nonmap_goal_accuracy"] = np.mean(active_acc) if active_acc else NAN_VAL
-    active_acc = [acc for acc, active, map, cat in zip(list_acc, slot_active, slot_map, slot_cat) if active and not map and cat]
-    goal_acc["average_nonmap_cat_goal_accuracy"] = np.mean(active_acc) if active_acc else NAN_VAL
-    active_acc = [acc for acc, active, map, cat in zip(list_acc, slot_active, slot_map, slot_cat) if active and not map and not cat]
-    goal_acc["average_nonmap_noncat_goal_accuracy"] = np.mean(active_acc) if active_acc else NAN_VAL
+    active_acc = [
+        acc
+        for acc, active, map in zip(list_acc, slot_active, slot_map)
+        if active and map
+    ]
+    goal_acc["average_map_goal_accuracy"] = (
+        np.mean(active_acc) if active_acc else NAN_VAL
+    )
+    active_acc = [
+        acc
+        for acc, active, map, cat in zip(list_acc, slot_active, slot_map, slot_cat)
+        if active and map and cat
+    ]
+    goal_acc["average_map_cat_goal_accuracy"] = (
+        np.mean(active_acc) if active_acc else NAN_VAL
+    )
+    active_acc = [
+        acc
+        for acc, active, map, cat in zip(list_acc, slot_active, slot_map, slot_cat)
+        if active and map and not cat
+    ]
+    goal_acc["average_map_noncat_goal_accuracy"] = (
+        np.mean(active_acc) if active_acc else NAN_VAL
+    )
+    active_acc = [
+        acc
+        for acc, active, map in zip(list_acc, slot_active, slot_map)
+        if active and not map
+    ]
+    goal_acc["average_nonmap_goal_accuracy"] = (
+        np.mean(active_acc) if active_acc else NAN_VAL
+    )
+    active_acc = [
+        acc
+        for acc, active, map, cat in zip(list_acc, slot_active, slot_map, slot_cat)
+        if active and not map and cat
+    ]
+    goal_acc["average_nonmap_cat_goal_accuracy"] = (
+        np.mean(active_acc) if active_acc else NAN_VAL
+    )
+    active_acc = [
+        acc
+        for acc, active, map, cat in zip(list_acc, slot_active, slot_map, slot_cat)
+        if active and not map and not cat
+    ]
+    goal_acc["average_nonmap_noncat_goal_accuracy"] = (
+        np.mean(active_acc) if active_acc else NAN_VAL
+    )
 
     # (4) Average goal accuracy.
     active_acc = [acc for acc, active in zip(list_acc, slot_active) if active]

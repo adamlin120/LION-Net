@@ -103,7 +103,7 @@ class Model:
     def load_best_state(
         self, ckpt_dir, load_optim=True, save_device=None, load_device=None
     ):
-        ckpt_path = ckpt_dir / 'best.ckpt'
+        ckpt_path = ckpt_dir / "best.ckpt"
         # ckpt_path = ckpt_dir / 'epoch-10.ckpt'
         # ckpt_path = list(ckpt_dir.glob("*.ckpt")).sort()[-1]
         self.load_state(ckpt_path, load_optim, save_device, load_device)
