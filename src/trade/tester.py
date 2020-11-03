@@ -16,7 +16,7 @@ from trade.utils import extract_values
 
 
 class Tester:
-    def __init__(self, config, device):
+    def __init__(self, config, device, model_path=None, use_sgd=False, epoch=None):
         for k, v in config.test.items():
             setattr(self, k, v)
         self.dc_gate = config.model_param.dc_gate
@@ -31,14 +31,22 @@ class Tester:
         self.origin_dir = Path(config.data.data_dir)
         self.data_dir = Path(config.data.save_dir)
         self.exp_dir = self.origin_dir / "exp" / config.model / self.exp
-        self.pred_dir = self.origin_dir / "prediction"
+        if model_path:
+            self.model_path = model_path
+        self.pred_dir = (
+            self.origin_dir / "prediction" / epoch
+            if epoch
+            else self.origin_dir / "prediction"
+        )
         if not self.pred_dir.exists():
             self.pred_dir.mkdir()
 
         self.config = config
         self.device = create_device(device)
 
-        self.vocab = pickle.load(open(self.data_dir / "vocab.pkl", "rb"))
+        self.vocab = pickle.load(
+            open(self.data_dir if not use_sgd else Path("../save/") / "vocab.pkl", "rb")
+        )
         self.model = Model(
             config=config.model_param, vocab=self.vocab, device=self.device
         )
@@ -201,6 +209,10 @@ class Tester:
                                 for word in words
                                 if word.text in self.emb
                             ]
+                            if not embs:
+                                final_preds[sidx].append(p)
+                                print(p)
+                                continue
                             embs = np.mean(embs, axis=0)
                             val_emb = []
                             for v in values:

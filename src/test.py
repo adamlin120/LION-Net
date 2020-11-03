@@ -22,11 +22,13 @@ def parse_args():
         type=Path,
         help="the path of config file",
     )
+    parser.add_argument("--model_path", default=None)
+    parser.add_argument("--epoch", default=None)
     args = parser.parse_args()
     return vars(args)
 
 
-def main(config_path):
+def main(config_path, model_path, epoch):
     warnings.filterwarnings("ignore", message="numpy.dtype size changed")
     warnings.filterwarnings("ignore", message="numpy.ufunc size changed")
     warnings.filterwarnings(
@@ -51,7 +53,7 @@ def main(config_path):
 
     logger.info(f"[*] Initialize {config.model} tester...")
     T = __import__(config.model, fromlist=["tester"])
-    tester = T.tester.Tester(config, config.train.device)
+    tester = T.tester.Tester(config, config.train.device, model_path, True, epoch)
     logger.info("[-] Tester initialization completed")
     logger.info("[*] Start testing...")
     tester.test()
